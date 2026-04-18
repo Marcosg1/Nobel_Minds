@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bar chart — Nobel Minds</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="../css/main.css" />
+  <style>
+    .axis-label {
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .bar {
+      fill: steelblue;
+    }
+
+    .bar:hover {
+      fill: goldenrod;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, .5);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="timeline.html">Timeline</a>
+      <a href="bar-chart.html">Bar chart</a>
+      <a href="line-chart.html">Line chart</a>
+      <a href="map.html">Map</a>
+    </nav>
+    <h1>Prizes by category</h1>
+  </header>
+  <main>
+    <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
+    <div id="tooltip" class="tooltip"></div>
+  </main>
+  <script>
+    d3.csv("../NobelData/raw/Award Categories.csv").then(function (data) {
+      // gets totals for each category
+      const categoryData = data.map(d => {
+        const women = +d["Prizes won by women"];
+        const men = +d["Prizes won by men"];
+
+        return {
+          category: d.Category,
+          total: women + men
+        };
+      });
+
+      const svgWidth = 700;
+      const svgHeight = 450;
+      const margin = { top: 50, right: 30, bottom: 90, left: 90 };
+
+      const width = svgWidth - margin.left - margin.right;
+      const height = svgHeight - margin.top - margin.bottom;
+
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      const chart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      svg.append("text")
+        .attr("x", svgWidth / 2)
+        .attr("y", 25)
+        .style("text-anchor", "middle")
+        .style("font-size", "20px")
+        .text("Nobel Prizes by Category");
+
+      // x scale (categories)
+      const scaleX = d3.scaleBand()
+        .domain(categoryData.map(d => d.category))
+        .range([0, width])
+        .padding(0.2);
+
+      // y scale (totals)
+      const scaleY = d3.scaleLinear()
+        .domain([0, d3.max(categoryData, d => d.total)])
+        .nice()
+        .range([height, 0]);
+
+      // makes x and y axes
+      chart.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(scaleX))
+        .selectAll("text")
+        .style("text-anchor", "middle");
+
+      chart.append("g")
+        .call(d3.axisLeft(scaleY).ticks(5));
+
+      // tooltip
+      const tooltip = d3.select("#tooltip");
+
+      // creates bars
+      chart.selectAll(".bar")
+        .data(categoryData)
+        .enter()
+        .append("rect")
+        .attr("class", "bar")
+        .attr("x", d => scaleX(d.category))
+        .attr("y", d => scaleY(d.total))
+        .attr("width", scaleX.bandwidth())
+        .attr("height", d => height - scaleY(d.total))
+        .on("mouseover", function(event, d) {
+          tooltip
+            .html(`<strong>${d.category}</strong>: ${d.total}`)
+            .style("opacity", 1);
+        })
+        .on("mousemove", function(event) {
+          tooltip
+            .style("left", (event.pageX + 12) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", 0);
+        });
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timeline — Nobel Minds</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="../css/main.css" />
+  <style>
+    .circle {
+      fill: steelblue;
+      opacity: 0.7;
+    }
+
+    .circle:hover {
+      fill: goldenrod;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, .6);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="timeline.html">Timeline</a>
+      <a href="bar-chart.html">Bar chart</a>
+      <a href="line-chart.html">Line chart</a>
+      <a href="map.html">Map</a>
+    </nav>
+    <h1>Timeline</h1>
+  </header>
+
+  <main>
+    <div id="chart" class="chart-wrap" role="img" aria-label="Timeline"></div>
+    <div id="tooltip" class="tooltip"></div>
+  </main>
+
+  <script>
+    d3.csv("../NobelData/raw/Prizes.csv").then(function (data) {
+
+      // gets year
+      data.forEach(d => {
+        d.Year = +d.Year;
+      });
+
+      const svgWidth = 1300;
+      const svgHeight = 750;
+      const margin = { top: 60, right: 30, bottom: 60, left: 60 };
+
+      const width = svgWidth - margin.left - margin.right;
+      const height = svgHeight - margin.top - margin.bottom;
+
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      const chart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      svg.append("text")
+        .attr("x", svgWidth / 2)
+        .attr("y", 30)
+        .style("text-anchor", "middle")
+        .style("font-size", "20px")
+        .text("Nobel Prize Timeline");
+
+      // x scale (timeline)
+      const scaleX = d3.scaleLinear()
+        .domain(d3.extent(data, d => d.Year))
+        .range([0, width]);
+
+      const centerY = height / 2;
+
+      // axis in center
+      chart.append("g")
+        .attr("transform", `translate(0,${centerY})`)
+        .call(d3.axisBottom(scaleX).tickFormat(d3.format("d")));
+
+      // makes center line in center of timeline
+      chart.append("line")
+        .attr("x1", 0)
+        .attr("x2", width)
+        .attr("y1", centerY)
+        .attr("y2", centerY)
+        .style("stroke", "#999")
+        .style("stroke-width", 2);
+
+      const tooltip = d3.select("#tooltip");
+
+      // assigns random Y positions
+      data.forEach(d => {
+        const padding = 20;
+        d.randomY = padding + Math.random() * (height - 2 * padding);
+      });
+
+      // draws lines behind dots
+      chart.selectAll(".line")
+        .data(data)
+        .enter()
+        .append("line")
+        .attr("x1", d => scaleX(d.Year))
+        .attr("x2", d => scaleX(d.Year))
+        .attr("y1", centerY)
+        .attr("y2", d => d.randomY)
+        .style("stroke", "grey")
+        .style("stroke-width", 1)
+        .style("opacity", 0.5);
+
+      // draws dots
+      chart.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", d => scaleX(d.Year))
+        .attr("cy", d => d.randomY)
+        .attr("r", 4)
+        .attr("class", "circle")
+        .on("mouseover", function (event, d) {
+          d3.select(this).attr("r", 6);
+
+          tooltip
+            .html(`<strong>${d.Winner}</strong> in ${d.Year}`)
+            .style("opacity", 1);
+        })
+        .on("mousemove", function (event) {
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 20) + "px");
+        })
+        .on("mouseout", function () {
+          d3.select(this).attr("r", 4);
+          tooltip.style("opacity", 0);
+        });
+    });
+  </script>
+</body>
+
+</html>

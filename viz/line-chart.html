@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Line chart — Nobel Minds</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="../css/main.css" />
+  <style>
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, .6);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../index.html">Home</a>
+      <a href="timeline.html">Timeline</a>
+      <a href="bar-chart.html">Bar chart</a>
+      <a href="line-chart.html">Line chart</a>
+      <a href="map.html">Map</a>
+    </nav>
+    <h1>Gender over time</h1>
+  </header>
+  <main>
+    <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
+  </main>
+  <script>
+    // TODO: Add D3 line chart
+  </script>
+</body>
+
+</html>
