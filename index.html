@@ -1,30 +1,852 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nobel Minds</title>
-    <link rel="stylesheet" href="css/main.css" />
-  </head>
-  <body>
-    <header>
-      <h1>Nobel Minds</h1>
-      <p class="byline">By Marcos Gallegos</p>
-      <nav class="site-nav" aria-label="Main">
-        <a href="index.html">Home</a>
-        <a href="viz/timeline.html">Timeline</a>
-        <a href="viz/bar-chart.html">Bar chart</a>
-        <a href="viz/line-chart.html">Line chart</a>
-        <a href="viz/map.html">Map</a>
-      </nav>
-    </header>
-    <main>
-      <p>
-        This project presents an interactive analysis of Nobel Prize data,
-        focusing on patterns in award distribution, representation, and global
-        impact. Use the links above for each visualization.
-      </p>
-      <p>Will update this page to show all visualizations in one view</p>
-    </main>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nobel Minds</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"
+    integrity="sha512-wNH6xsp2n8CfB91nrBtfc4sfLwYPBMjSWVUwQOp60AYYXH6i8yCwuKFZ4rgK2i6pQek/b+bSyR7b01/922IBzQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    .bar {
+      fill: steelblue;
+    }
+
+    .bar:hover {
+      fill: goldenrod;
+    }
+
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, .5);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 5px;
+      font-size: 13px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .circle {
+      fill: steelblue;
+      opacity: 0.7;
+    }
+
+    .circle:hover {
+      fill: goldenrod;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Nobel Minds</h1>
+    <p class="byline">By Marcos Gallegos</p>
+    <nav class="site-nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="viz/timeline.html">Timeline</a>
+      <a href="viz/bar-chart.html">Bar chart</a>
+      <a href="viz/line-chart.html">Line chart</a>
+      <a href="viz/map.html">Map</a>
+    </nav>
+  </header>
+  <main>
+    <p>
+      This project presents an interactive analysis of Nobel Prize data,
+      focusing on patterns in award distribution, representation, and global
+      impact. Use the links above for each visualization.
+    </p>
+    <section aria-labelledby="filters-heading">
+      <h2 id="filters-heading">Filters</h2>
+      <form id="global-filters">
+        <label for="year-min">Year min</label>
+        <input id="year-min" name="yearMin" type="number" placeholder="1901" />
+
+        <label for="year-max">Year max</label>
+        <input id="year-max" name="yearMax" type="number" placeholder="2014" />
+
+        <label for="category-filter">Category</label>
+        <select id="category-filter" name="category">
+          <option value="All">All</option>
+        </select>
+
+        <label for="gender-filter">Gender</label>
+        <select id="gender-filter" name="gender">
+          <option value="All">All</option>
+        </select>
+
+        <label for="country-filter">Country</label>
+        <select id="country-filter" name="country">
+          <option value="All">All</option>
+        </select>
+
+        <button type="button" id="reset-filters">Reset filters</button>
+      </form>
+    </section>
+    <section aria-labelledby="bar-chart-heading">
+      <h2 id="bar-chart-heading">Prizes by category</h2>
+      <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
+      <div id="tooltip" class="tooltip"></div>
+    </section>
+    <section aria-labelledby="line-chart-heading">
+      <h2 id="line-chart-heading">Gender over time</h2>
+      <div id="line-chart" class="chart-wrap" role="img" aria-label="Line chart"></div>
+      <div id="line-tooltip" class="tooltip"></div>
+    </section>
+    <section aria-labelledby="timeline-chart-heading">
+      <h2 id="timeline-chart-heading">Timeline</h2>
+      <div id="timeline-chart" class="chart-wrap" role="img" aria-label="Timeline"></div>
+      <div id="timeline-tooltip" class="tooltip"></div>
+    </section>
+    <section aria-labelledby="map-chart-heading">
+      <h2 id="map-chart-heading">Nobel Prizes by Country</h2>
+      <div id="map-chart" class="chart-wrap" role="img" aria-label="Map"></div>
+      <div id="map-tooltip" class="tooltip"></div>
+    </section>
+  </main>
+  <script>
+    let winnersData = [];
+    let barChart, barScaleX, barScaleY, barHeight, barWidth, barAxisX, barAxisY;
+    let lineChart, lineScaleX, lineScaleY, lineWidth, lineHeight, lineAxisX, lineAxisY;
+    let timelineChart, timelineScaleX, timelineWidth, timelineHeight, timelineCenterY, timelineAxisX;
+    let mapSvg, mapPath, mapProjection, mapLegendGroup, mapFeatures = [];
+    let mapColorScale, mapLogScale, mapNameAliases, mapPointCountries, mapPrizeMap = {};
+    let mapLoaded = false;
+    const filters = {
+      yearMin: null,
+      yearMax: null,
+      category: "All",
+      gender: "All",
+      country: "All"
+    };
+
+    // applies the filters to the data
+    function applyFilters(rows, currentFilters) {
+      return rows.filter((row) => {
+        const rowYears = row.years.length ? row.years : [row.year];
+        const matchesYearMin = currentFilters.yearMin === null || rowYears.some((year) => Number.isFinite(year) && year >= currentFilters.yearMin);
+        const matchesYearMax = currentFilters.yearMax === null || rowYears.some((year) => Number.isFinite(year) && year <= currentFilters.yearMax);
+        const matchesCategory = currentFilters.category === "All" || row.categories.includes(currentFilters.category);
+        const matchesGender = currentFilters.gender === "All" || row.gender === currentFilters.gender;
+        const matchesCountry = currentFilters.country === "All" || row.country === currentFilters.country;
+
+        return (
+          matchesYearMin &&
+          matchesYearMax &&
+          matchesCategory &&
+          matchesGender &&
+          matchesCountry
+        );
+      });
+    }
+
+    // initializes the bar chart with the dimensions and the svg
+    function initializeBarChart() {
+      const svgWidth = 700;
+      const svgHeight = 450;
+      const margin = { top: 50, right: 30, bottom: 90, left: 90 };
+      barWidth = svgWidth - margin.left - margin.right;
+      barHeight = svgHeight - margin.top - margin.bottom;
+
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      barChart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      svg.append("text")
+        .attr("x", svgWidth / 2)
+        .attr("y", 25)
+        .style("text-anchor", "middle")
+        .style("font-size", "20px")
+        .text("Nobel Prizes by Category");
+
+      // sets the scales for the x and y axes
+      barScaleX = d3.scaleBand()
+        .range([0, barWidth])
+        .padding(0.2);
+      barScaleY = d3.scaleLinear()
+        .range([barHeight, 0]);
+
+      // makes the x and y axes
+      barAxisX = barChart.append("g").attr("transform", `translate(0,${barHeight})`);
+      barAxisY = barChart.append("g");
+    }
+
+    // updates the bar chart with the updated rows
+    function updateBar(updatedRows) {
+      const barTooltip = d3.select("#tooltip");
+      const categoryMap = d3.rollup(
+        updatedRows.flatMap((row) => row.categories),
+        (values) => values.length,
+        (category) => category
+      );
+
+      // gets the category data
+      const categoryData = Array.from(categoryMap, ([category, total]) => ({ category, total }));
+
+      // sets the domain for the x and y scales
+      barScaleX.domain(categoryData.map((d) => d.category));
+      barScaleY.domain([0, d3.max(categoryData, (d) => d.total) || 1]).nice();
+
+      // makes the x axis
+      barAxisX.call(d3.axisBottom(barScaleX))
+        .selectAll("text")
+        .style("text-anchor", "middle");
+
+      // makes the y axis
+      barAxisY.call(d3.axisLeft(barScaleY).ticks(5));
+
+      // updates and creates the bars
+      barChart.selectAll(".bar")
+        .data(categoryData, (d) => d.category)
+        .join(
+          (enter) => enter
+            .append("rect")
+            .attr("class", "bar")
+            .attr("x", (d) => barScaleX(d.category))
+            .attr("y", (d) => barScaleY(d.total))
+            .attr("width", barScaleX.bandwidth())
+            .attr("height", (d) => barHeight - barScaleY(d.total))
+            .on("mouseover", function (event, d) {
+              barTooltip
+                .html(`<strong>${d.category}</strong>: ${d.total}`)
+                .style("opacity", 1);
+            })
+            .on("mousemove", function (event) {
+              barTooltip
+                .style("left", `${event.pageX + 12}px`)
+                .style("top", `${event.pageY - 28}px`);
+            })
+            .on("mouseout", function () {
+              barTooltip.style("opacity", 0);
+            }),
+          (update) => update
+            .attr("x", (d) => barScaleX(d.category))
+            .attr("y", (d) => barScaleY(d.total))
+            .attr("width", barScaleX.bandwidth())
+            .attr("height", (d) => barHeight - barScaleY(d.total)),
+          (exit) => exit.remove()
+        );
+    }
+
+    // initializes the line chart with the dimensions and the svg
+    function initializeLineChart() {
+      const svgWidth = 900;
+      const svgHeight = 500;
+      const margin = { top: 60, right: 60, bottom: 60, left: 60 };
+      lineWidth = svgWidth - margin.left - margin.right;
+      lineHeight = svgHeight - margin.top - margin.bottom;
+
+      const svg = d3.select("#line-chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      lineChart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      lineChart.append("text")
+        .attr("x", lineWidth / 2)
+        .attr("y", -20)
+        .style("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .text("Nobel Winners Men vs Woman");
+
+      // sets the scales for the x and y axes
+      lineScaleX = d3.scaleLinear()
+        .range([0, lineWidth]);
+      lineScaleY = d3.scaleLinear()
+        .range([lineHeight, 0]);
+
+      // makes the x and y axes
+      lineAxisX = lineChart.append("g")
+        .attr("transform", `translate(0,${lineHeight})`);
+      lineAxisY = lineChart.append("g");
+
+      // makes the x axis labels
+      lineChart.append("text")
+        .attr("x", lineWidth / 2)
+        .attr("y", lineHeight + 45)
+        .attr("text-anchor", "middle")
+        .text("Year");
+
+      // makes the y axis labels
+      lineChart.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -lineHeight / 2)
+        .attr("y", -45)
+        .attr("text-anchor", "middle")
+        .text("Number of Winners");
+    }
+
+    // updates the line chart with the updated rows
+    function updateLine(updatedRows) {
+      const lineTooltip = d3.select("#line-tooltip");
+
+      // normalizes the data to yearly entries
+      const yearlyEntries = updatedRows.flatMap((row) => {
+        const years = row.years.length ? row.years : [row.year];
+        return years
+          .filter((year) => Number.isFinite(year))
+          .map((year) => ({
+            year,
+            gender: row.gender
+          }));
+      });
+
+      // rolls up the data to yearly entries, counts the number of men and women for each year
+      const yearlyMap = d3.rollup(
+        yearlyEntries,
+        (entries) => ({
+          men: entries.filter((entry) => entry.gender === "Male").length,
+          women: entries.filter((entry) => entry.gender === "Female").length
+        }),
+        (entry) => entry.year
+      );
+
+      // converts the data to an array of objects
+      const yearlyData = Array.from(yearlyMap, ([Year, counts]) => ({
+        Year,
+        men: counts.men,
+        women: counts.women
+      })).sort((a, b) => d3.ascending(a.Year, b.Year));
+
+      // default year if no data
+      const fallbackYear = winnersData.length ? d3.min(winnersData, (d) => d.year) || 1901 : 1901;
+
+      // gets the range of years and the maximum count of men and women
+      const yearRange = yearlyData.length ? d3.extent(yearlyData, (d) => d.Year) : [fallbackYear, fallbackYear];
+      const maxCount = yearlyData.length ? d3.max(yearlyData, (d) => Math.max(d.men, d.women)) || 1: 1;
+
+      // sets the domain for the x and y scales
+      lineScaleX.domain(yearRange);
+      lineScaleY.domain([0, maxCount]).nice();
+
+      // makes the x and y axes
+      lineAxisX.call(d3.axisBottom(lineScaleX).tickFormat(d3.format("d")));
+      lineAxisY.call(d3.axisLeft(lineScaleY));
+
+      // makes the men line
+      const menLine = d3.line()
+        .x((d) => lineScaleX(d.Year))
+        .y((d) => lineScaleY(d.men));
+
+      // makes the women line
+      const womenLine = d3.line()
+        .x((d) => lineScaleX(d.Year))
+        .y((d) => lineScaleY(d.women));
+
+      // updates and creates the men line
+      lineChart.selectAll("path.line-men")
+        .data([yearlyData])
+        .join("path")
+        .attr("class", "line-men")
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("d", menLine);
+
+      // updates and creates the women line
+      lineChart.selectAll("path.line-women")
+        .data([yearlyData])
+        .join("path")
+        .attr("class", "line-women")
+        .attr("fill", "none")
+        .attr("stroke", "orange")
+        .attr("stroke-width", 2)
+        .attr("d", womenLine);
+
+      // updates and creates the men dots
+      lineChart.selectAll("circle.dot-men")
+        .data(yearlyData, (d) => d.Year)
+        .join(
+          (enter) => enter
+            .append("circle")
+            .attr("class", "dot-men")
+            .attr("r", 3)
+            .style("fill", "steelblue")
+            .attr("cx", (d) => lineScaleX(d.Year))
+            .attr("cy", (d) => lineScaleY(d.men)),
+          (update) => update
+            .attr("cx", (d) => lineScaleX(d.Year))
+            .attr("cy", (d) => lineScaleY(d.men)),
+          (exit) => exit.remove()
+        )
+        .on("mouseover", function (event, d) {
+          lineTooltip
+            .style("opacity", 1)
+            .html(`Year: ${d.Year}<br>Men: ${d.men}`);
+        })
+        .on("mousemove", function (event) {
+          lineTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          lineTooltip.style("opacity", 0);
+        });
+
+      // updates and creates the women dots
+      lineChart.selectAll("circle.dot-women")
+        .data(yearlyData, (d) => d.Year)
+        .join(
+          (enter) => enter
+            .append("circle")
+            .attr("class", "dot-women")
+            .attr("r", 3)
+            .style("fill", "orange")
+            .attr("cx", (d) => lineScaleX(d.Year))
+            .attr("cy", (d) => lineScaleY(d.women)),
+          (update) => update
+            .attr("cx", (d) => lineScaleX(d.Year))
+            .attr("cy", (d) => lineScaleY(d.women)),
+          (exit) => exit.remove()
+        )
+        .on("mouseover", function (event, d) {
+          lineTooltip
+            .style("opacity", 1)
+            .html(`Year: ${d.Year}<br>Women: ${d.women}`);
+        })
+        .on("mousemove", function (event) {
+          lineTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          lineTooltip.style("opacity", 0);
+        });
+    }
+
+    // initializes the timeline chart with the dimensions and the svg
+    function initializeTimelineChart() {
+      const svgWidth = 1300;
+      const svgHeight = 750;
+      const margin = { top: 60, right: 30, bottom: 60, left: 60 };
+      timelineWidth = svgWidth - margin.left - margin.right;
+      timelineHeight = svgHeight - margin.top - margin.bottom;
+      timelineCenterY = timelineHeight / 2;
+
+      const svg = d3.select("#timeline-chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      timelineChart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      svg.append("text")
+        .attr("x", svgWidth / 2)
+        .attr("y", 30)
+        .style("text-anchor", "middle")
+        .style("font-size", "20px")
+        .text("Nobel Prize Timeline");
+
+      // sets the scales for the x axis
+      timelineScaleX = d3.scaleLinear()
+        .range([0, timelineWidth]);
+
+      // makes axis and center line
+      timelineAxisX = timelineChart.append("g")
+        .attr("transform", `translate(0,${timelineCenterY})`);
+
+      // makes the center line
+      timelineChart.append("line")
+        .attr("x1", 0)
+        .attr("x2", timelineWidth)
+        .attr("y1", timelineCenterY)
+        .attr("y2", timelineCenterY)
+        .style("stroke", "black")
+        .style("stroke-width", 2);
+    }
+
+    // updates the timeline chart with the updated rows
+    function updateTimeline(updatedRows) {
+      const timelineTooltip = d3.select("#timeline-tooltip");
+
+      // normalizes to entries per winner-year
+      const timelineData = updatedRows.flatMap((row) => {
+        const years = row.years.length ? row.years : [row.year];
+        return years
+          .filter((year) => Number.isFinite(year))
+          .map((year) => ({
+            Winner: row.Winner || "Unknown",
+            Year: year
+          }));
+      });
+
+      // default year if no data
+      const fallbackYear = winnersData.length ? d3.min(winnersData, (d) => d.year) || 1901 : 1901;
+
+      // gets the range of years
+      const yearRange = timelineData.length ? d3.extent(timelineData, (d) => d.Year) : [fallbackYear, fallbackYear];
+
+      // sets the domain for the x scale
+      timelineScaleX.domain(yearRange);
+      timelineAxisX.call(d3.axisBottom(timelineScaleX).tickFormat(d3.format("d")));
+
+      // assigns random y positions similar to timeline page
+      timelineData.forEach((d) => {
+        const padding = 20;
+        d.randomY = padding + Math.random() * (timelineHeight - 2 * padding);
+      });
+
+      // draws line connectors
+      timelineChart.selectAll(".timeline-connector")
+        .data(timelineData, (d) => `${d.Winner}-${d.Year}`)
+        .join(
+          (enter) => enter
+            .append("line")
+            .attr("class", "timeline-connector")
+            .attr("x1", (d) => timelineScaleX(d.Year))
+            .attr("x2", (d) => timelineScaleX(d.Year))
+            .attr("y1", timelineCenterY)
+            .attr("y2", (d) => d.randomY)
+            .style("stroke", "grey")
+            .style("stroke-width", 1)
+            .style("opacity", 0.5),
+          (update) => update
+            .attr("x1", (d) => timelineScaleX(d.Year))
+            .attr("x2", (d) => timelineScaleX(d.Year))
+            .attr("y1", timelineCenterY)
+            .attr("y2", (d) => d.randomY),
+          (exit) => exit.remove()
+        );
+
+      // draws timeline dots
+      timelineChart.selectAll(".timeline-dot")
+        .data(timelineData, (d) => `${d.Winner}-${d.Year}`)
+        .join(
+          (enter) => enter
+            .append("circle")
+            .attr("class", "circle timeline-dot")
+            .attr("cx", (d) => timelineScaleX(d.Year))
+            .attr("cy", (d) => d.randomY)
+            .attr("r", 4),
+          (update) => update
+            .attr("cx", (d) => timelineScaleX(d.Year))
+            .attr("cy", (d) => d.randomY),
+          (exit) => exit.remove()
+        )
+        .on("mouseover", function (event, d) {
+          d3.select(this).attr("r", 6);
+          timelineTooltip
+            .html(`<strong>${d.Winner}</strong> in ${d.Year}`)
+            .style("opacity", 1);
+        })
+        .on("mousemove", function (event) {
+          timelineTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          d3.select(this).attr("r", 4);
+          timelineTooltip.style("opacity", 0);
+        });
+    }
+
+    // initializes the map chart with the dimensions and the svg
+    function initializeMapChart() {
+      const svgWidth = 960;
+      const svgHeight = 550;
+
+      mapSvg = d3.select("#map-chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      // makes the projection for the map
+      mapProjection = d3.geoNaturalEarth1()
+        .scale(145)
+        .translate([svgWidth / 2, (svgHeight / 2) - 20]);
+
+      // makes the path for the map
+      mapPath = d3.geoPath().projection(mapProjection);
+
+      // logs scale valuesfor the map
+      mapLogScale = (value) => Math.log1p(value);
+      mapColorScale = d3.scaleSequential()
+        .interpolator(d3.interpolateBlues);
+
+      // renames countries to match the map
+      mapNameAliases = {
+        "South Korea": "Korea",
+        "Myanmar": "Myanmar (Burma)",
+        "Czechia": "Czech Republic"
+      };
+
+      // mapped countires that don't have a polygon in the geojson
+      mapPointCountries = [
+        { mapLabel: "Hong Kong", dataName: "Hong Kong", coordinates: [114.1694, 22.3193] },
+        { mapLabel: "Faroe Islands", dataName: "Faroe Islands", coordinates: [-6.9118, 61.8926] },
+        { mapLabel: "Saint Lucia", dataName: "Saint Lucia", coordinates: [-60.9789, 13.9094] },
+        { mapLabel: "Palestine", dataName: "Palestine", coordinates: [35.2332, 31.9522] },
+        { mapLabel: "Yugoslavia", dataName: "Yugoslavia", coordinates: [20.46, 44.82] }
+      ];
+
+      // makes the legend group for the map
+      mapLegendGroup = mapSvg.append("g")
+        .attr("class", "legend")
+        .attr("transform", "translate(0,500)");
+
+      // loads the geojson data for the map
+      d3.json("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
+        .then((geoData) => {
+          mapFeatures = geoData.features;
+          mapLoaded = true;
+          refresh();
+        });
+    }
+
+    // updates the map chart with the updated rows
+    function updateMap(updatedRows) {
+      // if the map is not loaded, return (just in case)
+      if (!mapLoaded) {
+        return;
+      }
+
+      const mapTooltip = d3.select("#map-tooltip");
+
+      // rolls up the data to the number of prizes for each country
+      mapPrizeMap = d3.rollup(
+        updatedRows,
+        (values) => values.length,
+        (row) => row.country
+      );
+
+      // gets the max number of prizes
+      const maxPrizes = d3.max(Array.from(mapPrizeMap.values())) || 0;
+
+      // sets the domain for the color scale
+      mapColorScale.domain([mapLogScale(0), mapLogScale(maxPrizes)]);
+
+      // gets the number of prizes for a country
+      const getPrizeValue = (mapName) => {
+        const dataName = mapNameAliases[mapName] || mapName;
+        return mapPrizeMap.get(dataName) || 0;
+      };
+
+      // draws the map shapes
+      mapSvg.selectAll("path.country-shape")
+        .data(mapFeatures)
+        .join("path")
+        .attr("class", "country-shape")
+        .attr("d", mapPath)
+        .attr("fill", (d) => {
+          const value = getPrizeValue(d.properties.name);
+          return value ? mapColorScale(mapLogScale(value)) : "lightgray";
+        })
+        .attr("stroke", "black")
+        .attr("stroke-width", 0.5)
+        .on("mouseover", function (event, d) {
+          mapTooltip
+            .style("opacity", 1)
+            .html(`<strong>${d.properties.name}</strong><br>Prizes: ${getPrizeValue(d.properties.name)}`);
+        })
+        .on("mousemove", function (event) {
+          mapTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          mapTooltip.style("opacity", 0);
+        });
+
+      // draws the points for the countries that don't have a polygon in the geojson
+      mapSvg.selectAll("circle.missing-country-point")
+        .data(mapPointCountries.filter((d) => (mapPrizeMap.get(d.dataName) || 0) > 0))
+        .join(
+          (enter) => enter.append("circle")
+            .attr("class", "missing-country-point")
+            .attr("cx", (d) => mapProjection(d.coordinates)[0])
+            .attr("cy", (d) => mapProjection(d.coordinates)[1])
+            .attr("r", 3)
+            .attr("fill", (d) => mapColorScale(mapLogScale(mapPrizeMap.get(d.dataName) || 0)))
+            .attr("stroke", "black")
+            .attr("stroke-width", 0.5)
+            .on("mouseover", function (event, d) {
+              mapTooltip
+                .style("opacity", 1)
+                .html(`<strong>${d.mapLabel}</strong><br>Prizes: ${mapPrizeMap.get(d.dataName) || 0}`);
+            })
+            .on("mousemove", function (event) {
+              mapTooltip
+                .style("left", `${event.pageX + 10}px`)
+                .style("top", `${event.pageY - 20}px`);
+            })
+            .on("mouseout", function () {
+              mapTooltip.style("opacity", 0);
+            }),
+          (exit) => exit.remove()
+        );
+
+      // makes the legend for the map 
+      const legendStops = [0, 1, 3, 10, 30, 100, maxPrizes]
+        .filter((value, index, arr) => arr.indexOf(value) === index)
+        .sort((a, b) => a - b);
+
+      // makes the legend for the map
+      const legend = d3.legendColor()
+        .orient("horizontal")
+        .shapeWidth(40)
+        .shapePadding(2)
+        .labelOffset(6)
+        .title("Nobel prizes by country")
+        .scale(mapColorScale)
+        .cells(legendStops.map(mapLogScale))
+        .labels(legendStops.map(d3.format("d")));
+
+      mapLegendGroup.call(legend);
+    }
+
+    // refreshes the dashboard with the updated rows
+    function refresh() {
+      const updatedRows = applyFilters(winnersData, filters);
+      updateTimeline(updatedRows);
+      updateBar(updatedRows);
+      updateLine(updatedRows);
+      updateMap(updatedRows);
+    }
+
+    // gets the unique sorted values for the filters (gender and country)
+    function getUniqueSortedValues(rows, key) {
+      return [...new Set(rows.map((row) => row[key]).filter(Boolean))].sort(d3.ascending);
+    }
+
+    // gets the unique sorted categories for the filters
+    function getUniqueSortedCategories(rows, key) {
+      return [...new Set(rows.flatMap((row) => row[key]).filter(Boolean))].sort(d3.ascending);
+    }
+
+    // makes the select options for the filters with the values
+    function makeSelectOptions(selectId, values) {
+      const select = document.getElementById(selectId);
+      select.innerHTML = "";
+
+      const allOption = document.createElement("option");
+      allOption.value = "All";
+      allOption.textContent = "All";
+      select.appendChild(allOption);
+
+      values.forEach((value) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        select.appendChild(option);
+      });
+    }
+
+    // binds the filter controls to the filters
+    function bindFilterControls() {
+      const yearMinInput = document.getElementById("year-min");
+      const yearMaxInput = document.getElementById("year-max");
+      const categorySelect = document.getElementById("category-filter");
+      const genderSelect = document.getElementById("gender-filter");
+      const countrySelect = document.getElementById("country-filter");
+      const resetButton = document.getElementById("reset-filters");
+
+      yearMinInput.addEventListener("input", function () {
+        filters.yearMin = this.value === "" ? null : Number(this.value);
+        refresh();
+      });
+
+      yearMaxInput.addEventListener("input", function () {
+        filters.yearMax = this.value === "" ? null : Number(this.value);
+        refresh();
+      });
+
+      categorySelect.addEventListener("change", function () {
+        filters.category = this.value;
+        refresh();
+      });
+
+      genderSelect.addEventListener("change", function () {
+        filters.gender = this.value;
+        refresh();
+      });
+
+      countrySelect.addEventListener("change", function () {
+        filters.country = this.value;
+        refresh();
+      });
+
+      resetButton.addEventListener("click", function () {
+        filters.yearMin = null;
+        filters.yearMax = null;
+        filters.category = "All";
+        filters.gender = "All";
+        filters.country = "All";
+
+        yearMinInput.value = "";
+        yearMaxInput.value = "";
+        categorySelect.value = "All";
+        genderSelect.value = "All";
+        countrySelect.value = "All";
+
+        refresh();
+      });
+    }
+
+    // loads the winners data
+    d3.csv("NobelData/processed/Winners.csv").then(function (data) {
+      winnersData = data.map((row) => {
+        const representedCountry = row["Country represented for Nobel Prize"] || "";
+        const firstCountry = representedCountry.split(",")[0] || "";
+        const years = (row.Year || "")
+          .split("|")
+          .map((value) => Number(value.trim()))
+          .filter((value) => Number.isFinite(value));
+        const categories = (row.Category || "")
+          .split("|")
+          .map((value) => value.trim())
+          .filter(Boolean);
+
+        return {
+          ...row,
+          year: years[0] || null, years,
+          category: categories[0] || "", categories,
+          gender: (row.Gender || "").trim(),
+          country: firstCountry.trim()
+        };
+      });
+
+      // gets the unique sorted categories, genders, and countries
+      const categories = getUniqueSortedCategories(winnersData, "categories");
+      const genders = getUniqueSortedValues(winnersData, "gender");
+      const countries = getUniqueSortedValues(winnersData, "country");
+
+      // makes the select options for the filters
+      makeSelectOptions("category-filter", categories);
+      makeSelectOptions("gender-filter", genders);
+      makeSelectOptions("country-filter", countries);
+
+      // binds the filter controls to the filters
+      bindFilterControls();
+
+      // initializes the charts
+      initializeBarChart();
+      initializeLineChart();
+      initializeTimelineChart();
+      initializeMapChart();
+
+      // sets the global variables
+      window.nobelWinnersData = winnersData;
+      window.nobelFilters = filters;
+      window.applyNobelFilters = applyFilters;
+      window.refreshNobelDashboard = refresh;
+      console.log("Loaded winners data:", winnersData);
+      refresh();
+    });
+  </script>
+</body>
+
 </html>

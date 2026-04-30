@@ -34,10 +34,149 @@
     <h1>Gender over time</h1>
   </header>
   <main>
-    <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
+    <div id="chart"></div>
+    <div id="tooltip" class="tooltip"></div>  
   </main>
   <script>
-    // TODO: Add D3 line chart
+    d3.csv("../NobelData/raw/Years.csv").then(function (data) {
+  
+      // gets year and counts of prizes won by men and women
+      data.forEach(d => {
+        d.Year = +d.Year;
+        d.men = +d["Prizes won by men"];
+        d.women = +d["Prizes won by women"];
+      });
+  
+      const svgWidth = 900;
+      const svgHeight = 500;
+      const margin = { top: 60, right: 60, bottom: 60, left: 60 };
+  
+      const width = svgWidth - margin.left - margin.right;
+      const height = svgHeight - margin.top - margin.bottom;
+  
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+  
+      const chart = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // title
+      chart.append("text")
+        .attr("x", width / 2)
+        .attr("y", -20)
+        .style("font-size", "20px")
+        .attr("text-anchor", "middle")
+        .text("Nobel Winners Men vs Woman");
+  
+      // x scale
+      const scaleX = d3.scaleLinear()
+        .domain(d3.extent(data, d => d.Year))
+        .range([0, width]);
+  
+      // y scale based on max of both men and women
+      const maxY = d3.max(data, d => Math.max(d.men, d.women));
+      const scaleY = d3.scaleLinear()
+        .domain([0, maxY])
+        .nice()
+        .range([height, 0]);
+  
+      // makes x and y axes
+      chart.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(scaleX).tickFormat(d3.format("d")));
+  
+      chart.append("g")
+        .call(d3.axisLeft(scaleY));
+
+      // x and y axis labels
+      chart.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + 45)
+        .attr("text-anchor", "middle")
+        .text("Year");
+
+      chart.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -45)
+        .attr("text-anchor", "middle")
+        .text("Number of Winners");
+  
+      // male and female lines
+      const menLine = d3.line()
+        .x(d => scaleX(d.Year))
+        .y(d => scaleY(d.men));
+  
+      const womenLine = d3.line()
+        .x(d => scaleX(d.Year))
+        .y(d => scaleY(d.women));
+  
+      // draws male and female lines
+      chart.append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 2)
+        .attr("d", menLine);
+  
+      chart.append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "orange")
+        .attr("stroke-width", 2)
+        .attr("d", womenLine);
+  
+      // tooltip
+      const tooltip = d3.select("#tooltip");
+  
+      // draws male winner dots
+      chart.selectAll(".dot-men")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", d => scaleX(d.Year))
+        .attr("cy", d => scaleY(d.men))
+        .attr("r", 3)
+        .style("fill", "steelblue")
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("opacity", 1)
+            .html(`Year: ${d.Year}<br>Men: ${d.men}`);
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 20) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", 0);
+        });
+
+      // draws female winner dots
+      chart.selectAll(".dot-women")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", d => scaleX(d.Year))
+        .attr("cy", d => scaleY(d.women))
+        .attr("r", 3)
+        .style("fill", "orange")
+        .on("mouseover", (event, d) => {
+          tooltip
+            .style("opacity", 1)
+            .html(`Year: ${d.Year}<br>Women: ${d.women}`);
+        })
+        .on("mousemove", (event) => {
+          tooltip
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 20) + "px");
+        })
+        .on("mouseout", function() {
+          tooltip.style("opacity", 0);
+        });  
+    });
   </script>
 </body>
 

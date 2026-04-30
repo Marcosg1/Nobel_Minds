@@ -121,17 +121,17 @@
         .attr("y", d => scaleY(d.total))
         .attr("width", scaleX.bandwidth())
         .attr("height", d => height - scaleY(d.total))
-        .on("mouseover", function(event, d) {
+        .on("mouseover", function (event, d) {
           tooltip
             .html(`<strong>${d.category}</strong>: ${d.total}`)
             .style("opacity", 1);
         })
-        .on("mousemove", function(event) {
+        .on("mousemove", function (event) {
           tooltip
             .style("left", (event.pageX + 12) + "px")
             .style("top", (event.pageY - 28) + "px");
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
           tooltip.style("opacity", 0);
         });
     });
