@@ -6,174 +6,1311 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nobel Minds</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js"
-    integrity="sha512-wNH6xsp2n8CfB91nrBtfc4sfLwYPBMjSWVUwQOp60AYYXH6i8yCwuKFZ4rgK2i6pQek/b+bSyR7b01/922IBzQ=="
-    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <link rel="stylesheet" href="css/main.css" />
-  <style>
-    .bar {
-      fill: steelblue;
-    }
-
-    .bar:hover {
-      fill: goldenrod;
-    }
-
-    .tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, .5);
-      color: white;
-      padding: 6px 10px;
-      border-radius: 5px;
-      font-size: 13px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
-
-    .circle {
-      fill: steelblue;
-      opacity: 0.7;
-    }
-
-    .circle:hover {
-      fill: goldenrod;
-    }
-  </style>
 </head>
 
 <body>
   <header>
     <h1>Nobel Minds</h1>
     <p class="byline">By Marcos Gallegos</p>
-    <nav class="site-nav" aria-label="Main">
-      <a href="index.html">Home</a>
-      <a href="viz/timeline.html">Timeline</a>
-      <a href="viz/bar-chart.html">Bar chart</a>
-      <a href="viz/line-chart.html">Line chart</a>
-      <a href="viz/map.html">Map</a>
-    </nav>
   </header>
   <main>
-    <p>
-      This project presents an interactive analysis of Nobel Prize data,
-      focusing on patterns in award distribution, representation, and global
-      impact. Use the links above for each visualization.
-    </p>
-    <section aria-labelledby="filters-heading">
-      <h2 id="filters-heading">Filters</h2>
-      <form id="global-filters">
-        <label for="year-min">Year min</label>
-        <input id="year-min" name="yearMin" type="number" placeholder="1901" />
-
-        <label for="year-max">Year max</label>
-        <input id="year-max" name="yearMax" type="number" placeholder="2014" />
-
-        <label for="category-filter">Category</label>
-        <select id="category-filter" name="category">
-          <option value="All">All</option>
-        </select>
-
-        <label for="gender-filter">Gender</label>
-        <select id="gender-filter" name="gender">
-          <option value="All">All</option>
-        </select>
-
-        <label for="country-filter">Country</label>
-        <select id="country-filter" name="country">
-          <option value="All">All</option>
-        </select>
-
-        <button type="button" id="reset-filters">Reset filters</button>
-      </form>
+    <section class="intro-welcome" aria-label="About this project">
+      <p class="intro-lead">
+        Nobel laureates are presented here across the years covered by
+        <a href="https://github.com/ali-ce/datasets/tree/master/Nobel-Database">this dataset</a>,
+        from the earliest prizes through the 2014 award year. The compilation is a
+        historical snapshot and does not include later prizes or revisions published
+        by the Nobel Prize organization. The material is organized so that award
+        history may be examined by discipline, geography, and period, and so that
+        individual recipients can be understood in relation to broader patterns in
+        the prize record.
+      </p>
+      <p class="intro-resource">
+        For authoritative information on how the prizes are awarded, eligibility, and
+        related policies, refer to the
+        <a href="https://www.nobelprize.org/frequently-asked-questions/">frequently asked questions published by the
+          Nobel Prize</a>.
+      </p>
     </section>
-    <section aria-labelledby="bar-chart-heading">
-      <h2 id="bar-chart-heading">Prizes by category</h2>
-      <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
-      <div id="tooltip" class="tooltip"></div>
-    </section>
-    <section aria-labelledby="line-chart-heading">
-      <h2 id="line-chart-heading">Gender over time</h2>
-      <div id="line-chart" class="chart-wrap" role="img" aria-label="Line chart"></div>
-      <div id="line-tooltip" class="tooltip"></div>
-    </section>
-    <section aria-labelledby="timeline-chart-heading">
-      <h2 id="timeline-chart-heading">Timeline</h2>
-      <div id="timeline-chart" class="chart-wrap" role="img" aria-label="Timeline"></div>
-      <div id="timeline-tooltip" class="tooltip"></div>
-    </section>
-    <section aria-labelledby="map-chart-heading">
-      <h2 id="map-chart-heading">Nobel Prizes by Country</h2>
-      <div id="map-chart" class="chart-wrap" role="img" aria-label="Map"></div>
-      <div id="map-tooltip" class="tooltip"></div>
-    </section>
+    <div class="dashboard-layout">
+      <aside class="filters-sidebar">
+        <section aria-labelledby="filters-heading">
+          <h2 id="filters-heading">Filters</h2>
+          <form id="global-filters">
+            <div class="filter-field filter-field-year-range">
+              <div id="year-range-label" class="filter-bubbles-legend">Award years</div>
+              <div id="year-range-readout" class="year-range-readout" aria-live="polite"></div>
+              <div id="year-range-slider" class="year-range-slider" role="group" aria-labelledby="year-range-label">
+              </div>
+            </div>
+            <div class="filter-field filter-field-bubbles" role="group" aria-labelledby="category-bubbles-label">
+              <div id="category-bubbles-label" class="filter-bubbles-legend">Category</div>
+              <div id="category-bubbles" class="filter-bubbles"></div>
+            </div>
+            <div class="filter-field filter-field-bubbles" role="group" aria-labelledby="sex-bubbles-label">
+              <div id="sex-bubbles-label" class="filter-bubbles-legend">Sex</div>
+              <div id="sex-bubbles" class="filter-bubbles"></div>
+            </div>
+            <div class="filter-field">
+              <label for="country-filter">Country</label>
+              <select id="country-filter" name="country">
+                <option value="All">All</option>
+              </select>
+            </div>
+            <div class="filter-actions">
+              <button type="button" id="reset-filters">Reset filters</button>
+            </div>
+          </form>
+        </section>
+      </aside>
+      <div class="charts-column">
+        <section aria-labelledby="timeline-chart-heading">
+          <header class="chart-section-header">
+            <h2 id="timeline-chart-heading" aria-live="polite"></h2>
+            <p class="chart-helper">Drag the brush on the lower strip to focus a period, or use the Award years control
+              in Filters; both stay in sync.</p>
+          </header>
+          <div id="timeline-chart" class="chart-wrap" role="img" aria-label="Timeline"></div>
+          <div id="timeline-tooltip" class="tooltip chart-tooltip"></div>
+          <div id="timeline-brush-tooltip" class="tooltip chart-tooltip"></div>
+          <div id="timeline-ww2-tooltip" class="tooltip chart-tooltip" role="tooltip"></div>
+        </section>
+        <section aria-labelledby="map-chart-heading">
+          <header class="chart-section-header">
+            <h2 id="map-chart-heading">Where Nobel laureates come from</h2>
+            <p class="chart-helper">Hover for prize totals (current filters). Click a country for laureates and prize
+              counts.</p>
+          </header>
+          <div id="map-chart" class="chart-wrap" role="img" aria-label="Map"></div>
+          <div id="map-tooltip" class="tooltip chart-tooltip"></div>
+          <aside id="map-country-detail" class="map-country-panel" hidden aria-live="polite">
+            <div class="map-detail-header">
+              <h3 class="map-detail-title" id="map-detail-title"></h3>
+              <button type="button" class="map-detail-close" id="map-detail-close"
+                aria-label="Close country details">Close</button>
+            </div>
+            <p class="map-detail-summary" id="map-detail-summary"></p>
+            <ul class="map-detail-list" id="map-detail-list" hidden></ul>
+            <p class="map-detail-empty" id="map-detail-empty" hidden></p>
+          </aside>
+        </section>
+        <section aria-labelledby="bar-chart-heading">
+          <header class="chart-section-header">
+            <h2 id="bar-chart-heading">How awards split across categories</h2>
+            <p class="chart-helper">Click a bar to explore details.</p>
+          </header>
+          <div id="chart" class="chart-wrap" role="img" aria-label="Bar chart"></div>
+          <div id="tooltip" class="tooltip chart-tooltip"></div>
+          <aside id="bar-category-detail" class="map-country-panel chart-detail-panel" hidden aria-live="polite">
+            <div class="map-detail-header">
+              <h3 class="map-detail-title" id="bar-detail-title"></h3>
+              <button type="button" class="map-detail-close" id="bar-detail-close"
+                aria-label="Close category details">Close</button>
+            </div>
+            <p class="map-detail-summary" id="bar-detail-summary"></p>
+            <ul class="map-detail-list" id="bar-detail-list" hidden></ul>
+            <p class="map-detail-empty" id="bar-detail-empty" hidden></p>
+          </aside>
+        </section>
+        <section aria-labelledby="line-chart-heading">
+          <header class="chart-section-header">
+            <h2 id="line-chart-heading">Gender balance of Nobel winners over time</h2>
+            <p class="chart-helper">Click a dot to explore details.</p>
+          </header>
+          <div id="line-chart" class="chart-wrap" role="img" aria-label="Line chart"></div>
+          <div id="line-tooltip" class="tooltip chart-tooltip"></div>
+          <aside id="line-year-detail" class="map-country-panel chart-detail-panel" hidden aria-live="polite">
+            <div class="map-detail-header">
+              <h3 class="map-detail-title" id="line-detail-title"></h3>
+              <button type="button" class="map-detail-close" id="line-detail-close"
+                aria-label="Close year details">Close</button>
+            </div>
+            <p class="map-detail-summary" id="line-detail-summary"></p>
+            <ul class="map-detail-list" id="line-detail-list" hidden></ul>
+            <p class="map-detail-empty" id="line-detail-empty" hidden></p>
+          </aside>
+        </section>
+      </div>
+    </div>
   </main>
   <script>
+    // ---------------- Shared data and filters ----------------
     let winnersData = [];
-    let barChart, barScaleX, barScaleY, barHeight, barWidth, barAxisX, barAxisY;
-    let lineChart, lineScaleX, lineScaleY, lineWidth, lineHeight, lineAxisX, lineAxisY;
-    let timelineChart, timelineScaleX, timelineWidth, timelineHeight, timelineCenterY, timelineAxisX;
-    let mapSvg, mapPath, mapProjection, mapLegendGroup, mapFeatures = [];
-    let mapColorScale, mapLogScale, mapNameAliases, mapPointCountries, mapPrizeMap = {};
-    let mapLoaded = false;
+    const DEFAULT_YEAR_MIN = 1901;
+    const DEFAULT_YEAR_MAX = 1916;
     const filters = {
-      yearMin: null,
-      yearMax: null,
-      category: "All",
-      gender: "All",
+      yearMin: DEFAULT_YEAR_MIN,
+      yearMax: DEFAULT_YEAR_MAX,
+      categoryAll: true,
+      categorySelected: new Set(),
+      sexAll: true,
+      sexSelected: new Set(),
       country: "All"
     };
+
+    // ---------------- Timeline and year-range brush for the sidebar ----------------
+    const TIMELINE_WW2_BAND_START = 1940;
+    const TIMELINE_WW2_BAND_END = 1942;
+    let timelineChart, timelineContextChart, timelineScaleX, timelineScaleXContext;
+    let timelineBrush, timelineBrushG;
+    let timelineWidth, timelineFocusHeight, timelineContextHeight, timelineSectionGap;
+    let timelineHeight, timelineCenterY, timelineAxisX, timelineAxisXContext;
+    let yearSliderExtent = [1901, 1916];
+    let yearRangeScale = null;
+    let yearRangeBrush = null;
+    let yearRangeBrushG = null;
+    let yearRangeInnerWidth = 0;
+    let yearRangeBrushProgrammatic = false;
+
+
+    // ---------------- Map chart ----------------
+    const MAP_COLORS = ["#ffffd4", "#fed98e", "#fe9929", "#d95f0e", "#993404"];
+    let mapSvg, mapPath, mapProjection, mapLegendGroup, mapFeatures = [];
+    let mapLogScale, mapNameAliases, mapPointCountries, mapPrizeMap = new Map();
+    let mapLaureatesByCountryCache = new Map();
+    let mapSelectedCountryKey = null;
+    let mapSelectedDisplayName = "";
+    let mapDetailPanelInitialized = false;
+    let mapLoaded = false;
+
+    // ---------------- Bar chart  ----------------
+    const BAR_CATEGORY_PALETTE = ["#2c1810", "#5c4033", "#6b5344", "#8b6914", "#9a6b2f", "#b8860b", "#c9a227", "#daa520", "#a67c00", "#4a3728"];
+    let barCategoryColors = d3.scaleOrdinal(BAR_CATEGORY_PALETTE);
+    let barChart, barScaleX, barScaleY, barHeight, barWidth, barAxisX, barAxisY, barYGrid;
+    let barSelectedCategory = null;
+
+    // ---------------- Line chart ----------------
+    let lineChart, lineScaleX, lineScaleY, lineWidth, lineHeight, lineAxisX, lineAxisY;
+    let lineSelectedYear = null;
+    let lineSelectedGender = null;
+
+    // ---------------- Shared: filter and row helper functions ----------------
+    // ignores year bounds for the timeline context strip (to allow year-range brush to work)
+    function applyFiltersWithoutYear(rows, currentFilters) {
+      return applyFilters(rows, {
+        ...currentFilters,
+        yearMin: null,
+        yearMax: null
+      });
+    }
+
+    // checks if this prize year lies in [yearMin, yearMax] with open ends when either bound is null
+    function prizeYearMatchesBounds(year, yearMin, yearMax) {
+      if (!Number.isFinite(year)) {
+        return false;
+      }
+      if (yearMin !== null && year < yearMin) {
+        return false;
+      }
+      if (yearMax !== null && year > yearMax) {
+        return false;
+      }
+      return true;
+    }
+
+    // checks if any of this row's award years fall in the active year filter (uses global filters)
+    function rowHasPrizeYearInBounds(rowYears, yearMin, yearMax) {
+      if (yearMin === null && yearMax === null) {
+        return true;
+      }
+      return rowYears.some((y) => prizeYearMatchesBounds(y, yearMin, yearMax));
+    }
+
+    // creates a deduplicated list of countries represented for Nobel Prize (comma-separated)
+    function splitRepresentedCountries(raw) {
+      if (!raw || !String(raw).trim()) {
+        return ["Unknown"];
+      }
+      const seenCountries = new Set();
+      const uniqueCountries = [];
+      for (const part of String(raw).split(",")) {
+        const country = part.trim();
+        if (country && !seenCountries.has(country)) {
+          seenCountries.add(country);
+          uniqueCountries.push(country);
+        }
+      }
+      return uniqueCountries;
+    }
+
+    // counts how many of this row's award years fall in the active year filter (uses global filters)
+    function countPrizeYearsInCurrentFilter(row) {
+      const awardYears = row.years && row.years.length ? row.years : (row.year != null ? [row.year] : []);
+      const fin = awardYears.filter((y) => Number.isFinite(y));
+      if (filters.yearMin === null && filters.yearMax === null) {
+        return fin.length;
+      }
+      return fin.filter((y) => prizeYearMatchesBounds(y, filters.yearMin, filters.yearMax)).length;
+    }
 
     // applies the filters to the data
     function applyFilters(rows, currentFilters) {
       return rows.filter((row) => {
         const rowYears = row.years.length ? row.years : [row.year];
-        const matchesYearMin = currentFilters.yearMin === null || rowYears.some((year) => Number.isFinite(year) && year >= currentFilters.yearMin);
-        const matchesYearMax = currentFilters.yearMax === null || rowYears.some((year) => Number.isFinite(year) && year <= currentFilters.yearMax);
-        const matchesCategory = currentFilters.category === "All" || row.categories.includes(currentFilters.category);
-        const matchesGender = currentFilters.gender === "All" || row.gender === currentFilters.gender;
+        const matchesYear = rowHasPrizeYearInBounds(rowYears, currentFilters.yearMin, currentFilters.yearMax);
+        const matchesCategory =
+          currentFilters.categoryAll ||
+          row.categories.some((c) => currentFilters.categorySelected.has(c));
+        const matchesSex =
+          currentFilters.sexAll ||
+          (row.gender && currentFilters.sexSelected.has(row.gender));
         const matchesCountry = currentFilters.country === "All" || row.country === currentFilters.country;
 
         return (
-          matchesYearMin &&
-          matchesYearMax &&
+          matchesYear &&
           matchesCategory &&
-          matchesGender &&
+          matchesSex &&
           matchesCountry
         );
       });
     }
 
+    // splits pipe seperated values for the award motivation, description, and link on official website (won multiple times)
+    function splitPipeValues(value) {
+      return (value || "")
+        .split("|")
+        .map((part) => part.trim())
+        .filter(Boolean);
+    }
+
+    // creates a map of laureate names to their links on the official website
+    function laureateNameLinksFromRows(rows) {
+      const nameLinksMap = new Map();
+      for (const row of rows) {
+        const name = (row.Winner || "").trim();
+        if (!name) {
+          continue;
+        }
+        const url = (splitPipeValues(row["Link on official website"] || "")[0] || "").trim();
+        const prev = nameLinksMap.get(name);
+        nameLinksMap.set(name, { link: (prev && prev.link) || url || "" });
+      }
+      return nameLinksMap;
+    }
+
+    // renders the name link detail panel for the bar and line charts
+    function renderNameLinkDetailPanel({
+      panelId,
+      titleId,
+      summaryId,
+      listId,
+      emptyId,
+      title,
+      summary,
+      nameLinkMap
+    }) {
+      const titleElement = document.getElementById(titleId);
+      const summaryElement = document.getElementById(summaryId);
+      const listElement = document.getElementById(listId);
+      const emptyElement = document.getElementById(emptyId);
+      const panel = document.getElementById(panelId);
+      if (!titleElement || !summaryElement || !listElement || !emptyElement || !panel) {
+        return;
+      }
+      titleElement.textContent = title;
+      summaryElement.textContent = summary;
+      const names = [...nameLinkMap.keys()].sort((a, b) => a.localeCompare(b));
+      if (!names.length) {
+        listElement.hidden = true;
+        listElement.innerHTML = "";
+        emptyElement.hidden = false;
+        emptyElement.textContent = "No laureates to list.";
+        panel.hidden = false;
+        return;
+      }
+      const fragment = document.createDocumentFragment();
+      for (const name of names) {
+        const info = nameLinkMap.get(name);
+        const url = info && info.link ? String(info.link).trim() : "";
+        const li = document.createElement("li");
+        if (url) {
+          const a = document.createElement("a");
+          a.href = url;
+          a.textContent = name;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          li.appendChild(a);
+        } else {
+          li.textContent = name;
+        }
+        fragment.appendChild(li);
+      }
+      listElement.innerHTML = "";
+      listElement.appendChild(fragment);
+      listElement.hidden = false;
+      emptyElement.hidden = true;
+      panel.hidden = false;
+    }
+
+    // finds the min/max award years present in a row set (for the year range slider when year filters are open-ended)
+    function getDataYearExtent(rows) {
+      let minY = Infinity;
+      let maxY = -Infinity;
+      for (const row of rows) {
+        const awardYears = row.years && row.years.length ? row.years : [row.year];
+        for (const y of awardYears) {
+          if (Number.isFinite(y)) {
+            minY = Math.min(minY, y);
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+      if (!Number.isFinite(minY)) {
+        return [DEFAULT_YEAR_MIN, DEFAULT_YEAR_MAX];
+      }
+      return [minY, maxY];
+    }
+
+    // creates a key for a timeline dot
+    function timelineDatumKey(d) {
+      return `${d.Winner}-${d.Year}-${d.Category}-${d.OfficialLink}`;
+    }
+
+    // random jitter for the timeline dots
+    function assignTimelineJitter(rows, chartHeight, options = {}) {
+      const {
+        xProp = "jitterX",
+        yProp = "jitterY",
+        padding = 20,
+        maxJitterX = 24,
+        centerY = chartHeight / 2,
+        xScale = null,
+        horizontalPadding = 6,
+        minSep = 11,
+        separationIterations = 18
+      } = options;
+
+      // gets the minimum and maximum y values for the timeline dots and calculates the y band and y span
+      const minY = padding;
+      const maxY = Math.max(minY, chartHeight - padding);
+      const yBand = Math.max(0, (maxY - minY) / 2);
+      const rawYSpan = (chartHeight - 2 * padding) * 0.42;
+      const ySpan = Math.max(2, Math.min(Math.max(2, yBand - 0.5), rawYSpan));
+      const clampY = (y) => Math.max(minY, Math.min(maxY, y));
+
+      // gets the minimum and maximum x values for the timeline dots and calculates the plot min and plot max
+      const xRange = xScale ? xScale.range() : [0, 0];
+      const plotMinX = xScale ? Math.min(...xRange) + horizontalPadding : -Infinity;
+      const plotMaxX = xScale ? Math.max(...xRange) - horizontalPadding : Infinity;
+      const clampPlotX = (x) => Math.max(plotMinX, Math.min(plotMaxX, x));
+
+      // gets the maximum horizontal jitter for the timeline dots
+      let maxHorizJitter = maxJitterX;
+      if (xScale && rows.length > 1) {
+        const years = Array.from(new Set(rows.map((d) => d.Year)))
+          .filter((y) => Number.isFinite(y))
+          .sort(d3.ascending);
+        const minYearPixelGap =
+          years.length > 1
+            ? d3.min(years.slice(1), (year, index) => Math.abs(xScale(year) - xScale(years[index])))
+            : Infinity;
+        if (Number.isFinite(minYearPixelGap)) {
+          maxHorizJitter = Math.min(maxJitterX, Math.max(3, minYearPixelGap * 0.48));
+        }
+      }
+
+      // creates an array of points for the timeline dots
+      const pts = [];
+      for (const d of rows) {
+        const baseX = xScale ? xScale(d.Year) : 0;
+        const dx = rows.length > 1 ? (Math.random() * 2 - 1) * maxHorizJitter : 0;
+        const x = clampPlotX(baseX + dx);
+        const y = clampY(centerY + (Math.random() * 2 - 1) * ySpan);
+        pts.push({ d, baseX, x, y });
+      }
+
+      // if there are less than 2 points, assign the x and y values to the points
+      if (pts.length < 2) {
+        for (const p of pts) {
+          p.d[xProp] = p.x - p.baseX;
+          p.d[yProp] = p.y;
+        }
+        return;
+      }
+
+      // calculates the minimum separation squared and the samples per round
+      const minSepSq = minSep * minSep;
+      const samplesPerRound = Math.max(40, Math.floor(pts.length * 14));
+
+      // iterates over the separation iterations and samples per round to assign the jitter to the points
+      for (let iter = 0; iter < separationIterations; iter++) {
+        for (let s = 0; s < samplesPerRound; s++) {
+          let i = Math.floor(Math.random() * pts.length);
+          let j = Math.floor(Math.random() * pts.length);
+          if (j === i) {
+            j = (j + 1) % pts.length;
+          }
+          const pi = pts[i];
+          const pj = pts[j];
+          let dx = pj.x - pi.x;
+          let dy = pj.y - pi.y;
+          const distSq = dx * dx + dy * dy;
+          if (distSq >= minSepSq) {
+            continue;
+          }
+          let dist = Math.sqrt(distSq);
+          let ux;
+          let uy;
+          if (dist < 1e-6) {
+            const ang = Math.random() * Math.PI * 2;
+            ux = Math.cos(ang);
+            uy = Math.sin(ang);
+            dist = 0;
+          } else {
+            ux = dx / dist;
+            uy = dy / dist;
+          }
+          const push = (minSep - dist) / 2;
+          pi.x = clampPlotX(pi.x - ux * push);
+          pi.y = clampY(pi.y - uy * push);
+          pj.x = clampPlotX(pj.x + ux * push);
+          pj.y = clampY(pj.y + uy * push);
+        }
+      }
+
+      for (const p of pts) {
+        p.d[xProp] = p.x - p.baseX;
+        p.d[yProp] = p.y;
+      }
+    }
+
+    // redraws the elements of the timeline chart when the brush changes
+    function redrawTimelineFocusElements() {
+      const focusRows = timelineChart.selectAll(".timeline-dot").data();
+      assignTimelineJitter(focusRows, timelineHeight, {
+        // assigns the jitter to the timeline dots
+        xProp: "jitterX",
+        yProp: "jitterY",
+        padding: 20,
+        maxJitterX: 34,
+        centerY: timelineCenterY,
+        xScale: timelineScaleX,
+        horizontalPadding: 6,
+        minSep: 11,
+        separationIterations: 22
+      });
+
+      const focusTickValues = timelineYearTickValues(timelineScaleX.domain(), 8);
+      timelineAxisX.call(
+        d3.axisBottom(timelineScaleX)
+          .tickValues(focusTickValues)
+          .tickFormat(d3.format("d"))
+      );
+      timelineChart.selectAll(".timeline-connector")
+        .attr("x1", (d) => timelineScaleX(d.Year))
+        .attr("x2", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+        .attr("y2", (d) => d.jitterY);
+      timelineChart.selectAll(".timeline-dot")
+        .attr("cx", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+        .attr("cy", (d) => d.jitterY);
+      updateTimelineWw2Band();
+    }
+
+    // applies the brush selection to the timeline chart
+    function timelineApplyBrushSelection(selection) {
+      if (!selection) {
+        return;
+      }
+      let d0 = timelineScaleXContext.invert(selection[0]);
+      let d1 = timelineScaleXContext.invert(selection[1]);
+      if (d0 > d1) {
+        [d0, d1] = [d1, d0];
+      }
+      timelineScaleX.domain([d0, d1]);
+      redrawTimelineFocusElements();
+    }
+
+    // clears the year filters and inputs from the timeline chart
+    function timelineClearYearFiltersAndInputs() {
+      filters.yearMin = null;
+      filters.yearMax = null;
+      syncYearRangeSliderFromFilters();
+    }
+
+    // syncs the year filters and inputs from the brush selection to the timeline chart
+    function timelineSyncFiltersFromBrushSelection(selection) {
+      let d0 = timelineScaleXContext.invert(selection[0]);
+      let d1 = timelineScaleXContext.invert(selection[1]);
+      if (d0 > d1) {
+        [d0, d1] = [d1, d0];
+      }
+      const yMin = Math.round(d0);
+      const yMax = Math.round(d1);
+      filters.yearMin = yMin;
+      filters.yearMax = yMax;
+      syncYearRangeSliderFromFilters();
+      refresh();
+    }
+
+    // updates the focus of the timeline chart during drag
+    function timelineBrushMoved(event) {
+      if (event.selection) {
+        timelineApplyBrushSelection(event.selection);
+      }
+      if (!event.sourceEvent) {
+        return;
+      }
+      if (!event.selection) {
+        timelineClearYearFiltersAndInputs();
+        refresh();
+        return;
+      }
+      timelineSyncFiltersFromBrushSelection(event.selection);
+    }
+
+    // clears the brush only when the end event fires with null 
+    function timelineBrushCommitted(event) {
+      if (!event.sourceEvent) {
+        return;
+      }
+      if (!event.selection) {
+        timelineClearYearFiltersAndInputs();
+        refresh();
+      }
+    }
+
+    // gets the years from the brush selection for the tooltip
+    function timelineYearsFromBrushRect() {
+      const rect = timelineBrushG.select(".selection").node();
+      if (!rect) {
+        return null;
+      }
+      const x = +rect.getAttribute("x");
+      const w = +rect.getAttribute("width");
+      if (!Number.isFinite(x) || !Number.isFinite(w) || w <= 0) {
+        return null;
+      }
+      let d0 = timelineScaleXContext.invert(x);
+      let d1 = timelineScaleXContext.invert(x + w);
+      if (d0 > d1) {
+        [d0, d1] = [d1, d0];
+      }
+      return [Math.round(d0), Math.round(d1)];
+    }
+
+    // checks if the pointer is over the brush selection for the tooltip
+    function timelinePointerOverBrushSelection(event) {
+      const rect = timelineBrushG.select(".selection").node();
+      if (!rect) {
+        return false;
+      }
+      const w = +rect.getAttribute("width");
+      if (!Number.isFinite(w) || w <= 0) {
+        return false;
+      }
+      if (event.target.classList && event.target.classList.contains("handle")) {
+        return true;
+      }
+      const bbox = rect.getBoundingClientRect();
+      const { clientX, clientY } = event;
+      return (
+        clientX >= bbox.left &&
+        clientX <= bbox.right &&
+        clientY >= bbox.top &&
+        clientY <= bbox.bottom
+      );
+    }
+
+    // binds the tooltip to the brush selection for the timeline chart
+    function timelineBindBrushRangeTooltip() {
+      const brushTip = d3.select("#timeline-brush-tooltip");
+      timelineBrushG
+        .on("mousemove.brushRangeTip", function (event) {
+          if (!timelinePointerOverBrushSelection(event)) {
+            brushTip.style("opacity", 0);
+            return;
+          }
+          const years = timelineYearsFromBrushRect();
+          if (!years) {
+            brushTip.style("opacity", 0);
+            return;
+          }
+          brushTip
+            .html(`${years[0]} – ${years[1]}`)
+            .style("opacity", 1)
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave.brushRangeTip", function () {
+          brushTip.style("opacity", 0);
+        });
+    }
+
+    // determines the pixels for the brush selection for the timeline chart
+    function timelineBrushPixelsForFilters(fullDomain) {
+      const yLo = fullDomain[0];
+      const yHi = fullDomain[1];
+      let x0 = 0;
+      let x1 = timelineWidth;
+      if (filters.yearMin != null) {
+        const y = Math.min(yHi, Math.max(yLo, filters.yearMin));
+        x0 = timelineScaleXContext(y);
+      }
+      if (filters.yearMax != null) {
+        const y = Math.min(yHi, Math.max(yLo, filters.yearMax));
+        x1 = timelineScaleXContext(y);
+      }
+      x0 = Math.max(0, Math.min(timelineWidth, x0));
+      x1 = Math.max(0, Math.min(timelineWidth, x1));
+      if (x0 > x1) {
+        [x0, x1] = [x1, x0];
+      }
+      return [x0, x1];
+    }
+
+    // updates the world war 2 red rectangle band for the timeline chart
+    function updateTimelineWw2Band() {
+      const band = timelineChart.select(".timeline-ww2-band");
+      if (band.empty()) {
+        return;
+      }
+      const xStart = timelineScaleX(TIMELINE_WW2_BAND_START);
+      const xEnd = timelineScaleX(TIMELINE_WW2_BAND_END);
+      const left = Math.min(xStart, xEnd);
+      const rawWidth = Math.abs(xEnd - xStart);
+      const clampedLeft = Math.max(0, Math.min(timelineWidth, left));
+      const clampedRight = Math.max(0, Math.min(timelineWidth, left + rawWidth));
+      const width = clampedRight - clampedLeft;
+      const visible = width >= 1;
+      band
+        .attr("x", clampedLeft)
+        .attr("width", Math.max(0, width))
+        .style("opacity", visible ? 1 : 0)
+        .style("pointer-events", visible ? "all" : "none");
+    }
+
+    // gets the tick values for the timeline chart axis
+    function timelineYearTickValues(domain, maxTicks = 8) {
+      const minYear = Math.ceil(Math.min(domain[0], domain[1]));
+      const maxYear = Math.floor(Math.max(domain[0], domain[1]));
+      if (!Number.isFinite(minYear) || !Number.isFinite(maxYear)) {
+        return [];
+      }
+      if (maxYear < minYear) {
+        return [Math.round((domain[0] + domain[1]) / 2)];
+      }
+      const span = maxYear - minYear;
+      const step = Math.max(1, Math.ceil((span + 1) / maxTicks));
+      const ticks = [];
+      for (let year = minYear; year <= maxYear; year += step) {
+        ticks.push(year);
+      }
+      if (ticks[ticks.length - 1] !== maxYear) {
+        ticks.push(maxYear);
+      }
+      return ticks;
+    }
+
+    // initializes the timeline chart with the dimensions and the svg
+    function initializeTimelineChart() {
+      // gets dimensions for the timeline chart
+      const wrap = document.getElementById("timeline-chart");
+      const measured = wrap && wrap.clientWidth > 0 ? wrap.clientWidth : 0;
+      const svgWidth = measured > 48 ? Math.max(480, Math.floor(measured) - 18) : 920;
+      const margin = { top: 26, right: 26, bottom: 48, left: 56 };
+
+      // sets the dimensions for the timeline chart
+      timelineFocusHeight = 335;
+      timelineContextHeight = 48;
+      timelineSectionGap = 15;
+      timelineWidth = svgWidth - margin.left - margin.right;
+      timelineHeight = timelineFocusHeight;
+      timelineCenterY = timelineFocusHeight / 2;
+
+      const innerBottom = margin.top + timelineFocusHeight + timelineSectionGap + timelineContextHeight;
+      const svgHeight = innerBottom + margin.bottom;
+
+      // creates the svg for the timeline chart
+      const svg = d3.select("#timeline-chart")
+        .append("svg")
+        .attr("class", "chart-svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight);
+
+      const timelineInner = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      timelineChart = timelineInner.append("g").attr("class", "timeline-focus");
+
+      timelineChart.append("rect")
+        .attr("class", "chart-plot-bg")
+        .attr("width", timelineWidth)
+        .attr("height", timelineFocusHeight)
+        .attr("opacity", 0.85);
+
+      const ww2BandTip = d3.select("#timeline-ww2-tooltip");
+      const ww2BandTipHtml = `
+        <div><strong>1940–1942: no Nobel Prizes</strong></div>
+        <div>During World War II the Nobel Foundation paused the awards; prize money stayed with the foundation until the prizes resumed.</div>
+      `;
+      // creates the world war 2 red rectangle band for the timeline chart
+      timelineChart.append("rect")
+        .attr("class", "timeline-ww2-band")
+        .attr("y", 0)
+        .attr("height", timelineFocusHeight)
+        .attr("rx", 2)
+        .attr("fill", "rgba(180, 45, 45, 0.16)")
+        .attr("stroke", "rgba(140, 30, 30, 0.4)")
+        .attr("stroke-width", 1)
+        .on("mouseenter", function () {
+          ww2BandTip.html(ww2BandTipHtml).style("opacity", 1);
+        })
+        .on("mousemove", function (event) {
+          ww2BandTip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseleave", function () {
+          ww2BandTip.style("opacity", 0);
+        });
+
+      // creates the context chart for the timeline chart
+      timelineContextChart = timelineInner.append("g")
+        .attr("class", "timeline-context")
+        .attr("transform", `translate(0, ${timelineFocusHeight + timelineSectionGap})`);
+
+      // creates the background for the context chart
+      timelineContextChart.append("rect")
+        .attr("class", "timeline-context-bg")
+        .attr("width", timelineWidth)
+        .attr("height", timelineContextHeight)
+        .attr("rx", 4)
+        .attr("fill", "var(--chart-plot-fill)")
+        .attr("stroke", "var(--nobel-border)")
+        .attr("stroke-width", 1);
+
+      // creates the scales for the timeline chart
+      timelineScaleX = d3.scaleLinear().range([0, timelineWidth]);
+      timelineScaleXContext = d3.scaleLinear().range([0, timelineWidth]);
+
+      // creates the axis for the timeline chart
+      timelineAxisX = timelineChart.append("g")
+        .attr("transform", `translate(0,${timelineCenterY})`);
+
+      // creates the axis for the context chart
+      timelineAxisXContext = timelineContextChart.append("g")
+        .attr("transform", `translate(0,${timelineContextHeight})`);
+
+      // creates the line for the timeline chart
+      timelineChart.append("line")
+        .attr("class", "timeline-axis-line")
+        .attr("x1", 0)
+        .attr("x2", timelineWidth)
+        .attr("y1", timelineCenterY)
+        .attr("y2", timelineCenterY);
+
+      // creates the line for the context chart
+      timelineContextChart.append("line")
+        .attr("x1", 0)
+        .attr("x2", timelineWidth)
+        .attr("y1", timelineContextHeight / 2)
+        .attr("y2", timelineContextHeight / 2)
+        .attr("class", "timeline-context-baseline");
+
+      // creates the brush for the timeline chart
+      timelineBrush = d3.brushX()
+        .extent([[0, 0], [timelineWidth, timelineContextHeight]])
+        .on("brush", timelineBrushMoved)
+        .on("end", timelineBrushCommitted);
+
+      // creates the brush group for the timeline chart
+      timelineBrushG = timelineContextChart.append("g")
+        .attr("class", "timeline-brush")
+        .call(timelineBrush);
+
+      timelineBindBrushRangeTooltip();
+    }
+
+    // updates the timeline chart with the updated rows and context rows
+    function updateTimeline(updatedRows, contextRows) {
+      const timelineTooltip = d3.select("#timeline-tooltip");
+
+      // converts the rows to winner year rows
+      const toWinnerYearRows = (rows, clipToYearBounds = false) =>
+        rows.flatMap((row) => {
+          const years = row.years.length ? row.years : [row.year];
+          const categories = row.categories.length ? row.categories : [row.category];
+          const motivations = splitPipeValues(row["Award Motivation"]);
+          const descriptions = splitPipeValues(row.Description);
+          const links = splitPipeValues(row["Link on official website"]);
+          return years
+            .map((year, index) => ({ year, index }))
+            .filter(({ year }) => Number.isFinite(year))
+            .filter(
+              ({ year }) =>
+                !clipToYearBounds ||
+                prizeYearMatchesBounds(year, filters.yearMin, filters.yearMax)
+            )
+            .map(({ year, index }) => ({
+              Winner: row.Winner || "Unknown",
+              Year: year,
+              Category: categories[index] || categories[0] || "Unknown",
+              AwardMotivation: motivations[index] || motivations[0] || "",
+              Description: descriptions[index] || descriptions[0] || (row.Description || "").trim(),
+              OfficialLink: links[index] || links[0] || ""
+            }));
+        });
+
+      // converts the updated rows to timeline data and context timeline data
+      const timelineData = toWinnerYearRows(updatedRows, true);
+      const contextTimelineData = toWinnerYearRows(contextRows, false);
+
+      // gets the fallback year if there are no updated rows
+      const fallbackYear = winnersData.length ? d3.min(winnersData, (d) => d.year) || 1901 : 1901;
+
+      // gets the minimum and maximum y values for the context timeline data
+      let y0;
+      let y1;
+      if (contextTimelineData.length) {
+        [y0, y1] = d3.extent(contextTimelineData, (d) => d.Year);
+      } else {
+        y0 = fallbackYear;
+        y1 = fallbackYear;
+      }
+      if (y1 - y0 < 1) {
+        y0 -= 0.5;
+        y1 += 0.5;
+      }
+
+      // gets the full domain for the timeline chart
+      const fullDomain = [y0, y1];
+
+      // gets the tick values for the context chart
+      const contextTickValues = timelineYearTickValues(fullDomain, 8);
+
+      // sets the domain for the context chart
+      timelineScaleXContext.domain(fullDomain);
+
+      // sets the domain for the timeline chart
+      timelineScaleX.domain(fullDomain);
+      timelineAxisXContext.call(
+        d3.axisBottom(timelineScaleXContext)
+          .tickValues(contextTickValues)
+          .tickFormat(d3.format("d"))
+      );
+
+      // assigns the jitter to the timeline data
+      assignTimelineJitter(timelineData, timelineHeight, {
+        xProp: "jitterX",
+        yProp: "jitterY",
+        padding: 20,
+        maxJitterX: 34,
+        centerY: timelineCenterY,
+        xScale: timelineScaleX,
+        horizontalPadding: 6,
+        minSep: 11,
+        separationIterations: 22
+      });
+
+      // assigns the jitter to the context timeline data
+      assignTimelineJitter(contextTimelineData, timelineContextHeight, {
+        xProp: "contextJitterX",
+        yProp: "contextJitterY",
+        padding: 8,
+        maxJitterX: 30,
+        centerY: timelineContextHeight / 2,
+        xScale: timelineScaleXContext,
+        horizontalPadding: 2,
+        minSep: 4,
+        separationIterations: 14
+      });
+
+      // creates the dots for the context chart
+      timelineContextChart.selectAll(".timeline-context-dot")
+        .data(contextTimelineData, timelineDatumKey)
+        .join(
+          (enter) => enter
+            .append("circle")
+            .attr("class", "timeline-context-dot")
+            .attr("r", 0.8)
+            .style("opacity", 0.45)
+            .style("pointer-events", "none"),
+          (update) => update,
+          (exit) => exit.remove()
+        )
+        .attr("cx", (d) => timelineScaleXContext(d.Year) + (d.contextJitterX || 0))
+        .attr("cy", (d) => d.contextJitterY);
+
+      // creates the connectors for the timeline chart
+      timelineChart.selectAll(".timeline-connector")
+        .data(timelineData, timelineDatumKey)
+        .join(
+          (enter) => enter
+            .append("line")
+            .attr("class", "timeline-connector")
+            .attr("x1", (d) => timelineScaleX(d.Year))
+            .attr("x2", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+            .attr("y1", timelineCenterY)
+            .attr("y2", (d) => d.jitterY)
+            .style("stroke", "rgba(139, 105, 20, 0.22)")
+            .style("stroke-linecap", "round")
+            .style("stroke-width", 1)
+            .style("opacity", 0.55),
+          (update) => update
+            .attr("x1", (d) => timelineScaleX(d.Year))
+            .attr("x2", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+            .attr("y2", (d) => d.jitterY),
+          (exit) => exit.remove()
+        );
+
+      // creates the dots for the timeline chart
+      timelineChart.selectAll(".timeline-dot")
+        .data(timelineData, timelineDatumKey)
+        .join(
+          (enter) => enter
+            .append("circle")
+            .attr("class", "timeline-dot")
+            .attr("cx", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+            .attr("cy", (d) => d.jitterY)
+            .attr("r", 4),
+          (update) => update
+            .attr("cx", (d) => timelineScaleX(d.Year) + (d.jitterX || 0))
+            .attr("cy", (d) => d.jitterY),
+          (exit) => exit.remove()
+        )
+        .on("mouseover", function (event, d) {
+          d3.select(this).attr("r", 5);
+          const motivationText = d.AwardMotivation || d.Description || "Not available";
+          timelineTooltip
+            .html(`
+              <div><strong>Winner:</strong> ${d.Winner}</div>
+              <div><strong>Year:</strong> ${d.Year}</div>
+              <div><strong>Category:</strong> ${d.Category}</div>
+              <div><strong>Award Motivation:</strong> ${motivationText}</div>
+            `)
+            .style("opacity", 1);
+        })
+        .on("mousemove", function (event) {
+          timelineTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          d3.select(this).attr("r", 4);
+          timelineTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          if (d.OfficialLink) {
+            window.open(d.OfficialLink, "_blank", "noopener,noreferrer");
+          }
+        });
+
+      redrawTimelineFocusElements();
+      const brushPx = timelineBrushPixelsForFilters(fullDomain);
+      timelineBrushG.call(timelineBrush.move, brushPx);
+    }
+
+    // updates the year range readout element to display the current year range
+    function updateYearRangeReadout() {
+      const el = document.getElementById("year-range-readout");
+      if (!el) {
+        return;
+      }
+      const [d0, d1] = yearSliderExtent;
+      if (filters.yearMin == null && filters.yearMax == null) {
+        el.textContent = `All years (${d0}–${d1})`;
+      } else {
+        el.textContent = `${filters.yearMin}–${filters.yearMax}`;
+      }
+    }
+
+    // syncs the year range slider from the filters
+    function syncYearRangeSliderFromFilters() {
+      if (!yearRangeBrushG || !yearRangeScale || !yearRangeBrush) {
+        updateYearRangeReadout();
+        return;
+      }
+      yearRangeBrushProgrammatic = true;
+      try {
+        if (filters.yearMin == null && filters.yearMax == null) {
+          yearRangeBrushG.call(yearRangeBrush.move, [0, yearRangeInnerWidth]);
+        } else {
+          const lo = Math.min(filters.yearMin, filters.yearMax);
+          const hi = Math.max(filters.yearMin, filters.yearMax);
+          const y0 = Math.max(yearSliderExtent[0], Math.min(yearSliderExtent[1], lo));
+          const y1 = Math.max(yearSliderExtent[0], Math.min(yearSliderExtent[1], hi));
+          yearRangeBrushG.call(yearRangeBrush.move, [yearRangeScale(y0), yearRangeScale(y1)]);
+        }
+      } finally {
+        yearRangeBrushProgrammatic = false;
+      }
+      updateYearRangeReadout();
+    }
+
+    // applies the year range brush selection to the timeline chart
+    function applyYearRangeBrushSelection(selection, opts) {
+      const snap = opts.snap === true;
+      const doRefresh = opts.doRefresh === true;
+      const [dMin, dMax] = yearSliderExtent;
+      if (!selection) {
+        filters.yearMin = null;
+        filters.yearMax = null;
+        if (snap && yearRangeBrushG && yearRangeBrush) {
+          yearRangeBrushProgrammatic = true;
+          try {
+            yearRangeBrushG.call(yearRangeBrush.move, [0, yearRangeInnerWidth]);
+          } finally {
+            yearRangeBrushProgrammatic = false;
+          }
+        }
+        updateYearRangeReadout();
+        if (doRefresh) {
+          refresh();
+        }
+        return;
+      }
+      let [x0, x1] = selection;
+      if (x0 > x1) {
+        [x0, x1] = [x1, x0];
+      }
+      let y0 = Math.round(yearRangeScale.invert(x0));
+      let y1 = Math.round(yearRangeScale.invert(x1));
+      y0 = Math.max(dMin, Math.min(dMax, y0));
+      y1 = Math.max(dMin, Math.min(dMax, y1));
+      if (y0 > y1) {
+        [y0, y1] = [y1, y0];
+      }
+      const atFullExtent = y0 <= dMin && y1 >= dMax;
+      if (atFullExtent) {
+        filters.yearMin = null;
+        filters.yearMax = null;
+      } else {
+        filters.yearMin = y0;
+        filters.yearMax = y1;
+      }
+      if (snap && yearRangeBrushG && yearRangeBrush) {
+        yearRangeBrushProgrammatic = true;
+        try {
+          if (filters.yearMin == null) {
+            yearRangeBrushG.call(yearRangeBrush.move, [0, yearRangeInnerWidth]);
+          } else {
+            let lo = yearRangeScale(filters.yearMin);
+            let hi = yearRangeScale(filters.yearMax);
+            if (hi - lo < 3) {
+              const mid = (lo + hi) / 2;
+              lo = Math.max(0, mid - 3);
+              hi = Math.min(yearRangeInnerWidth, lo + 6);
+              if (hi > yearRangeInnerWidth) {
+                hi = yearRangeInnerWidth;
+                lo = Math.max(0, hi - 6);
+              }
+            }
+            yearRangeBrushG.call(yearRangeBrush.move, [Math.min(lo, hi), Math.max(lo, hi)]);
+          }
+        } finally {
+          yearRangeBrushProgrammatic = false;
+        }
+      }
+      updateYearRangeReadout();
+      if (doRefresh) {
+        refresh();
+      }
+    }
+
+    // initializes the year range slider for the timeline chart
+    function initializeYearRangeSlider() {
+      const container = document.getElementById("year-range-slider");
+      if (!container || container.querySelector("svg")) {
+        return;
+      }
+      // gets data and dimensions for the year range slider
+      yearSliderExtent = getDataYearExtent(winnersData);
+      const margin = { top: 2, right: 2, bottom: 20, left: 2 };
+      const innerH = 24;
+      const width = Math.max(120, (container.clientWidth || 140));
+      yearRangeInnerWidth = width - margin.left - margin.right;
+      const innerW = yearRangeInnerWidth;
+      const svgWidth = width;
+      const svgHeight = margin.top + innerH + margin.bottom;
+      const [dMin, dMax] = yearSliderExtent;
+
+      // creates the scale for the year range slider
+      yearRangeScale = d3.scaleLinear().domain([dMin, dMax]).range([0, innerW]);
+
+      // creates the svg for the year range slider
+      const svg = d3.select(container)
+        .append("svg")
+        .attr("class", "chart-svg year-range-svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
+        .attr("role", "img")
+        .attr("aria-label", `Award year range from ${dMin} through ${dMax}`);
+
+      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+      // makes the track for the year range slider
+      g.append("rect")
+        .attr("class", "year-range-track")
+        .attr("width", innerW)
+        .attr("height", innerH)
+        .attr("rx", 4);
+
+      // makes the axis for the year range slider
+      const axisG = g.append("g")
+        .attr("transform", `translate(0, ${innerH})`);
+      const tickCount = innerW < 160 ? 4 : 5;
+      axisG.call(
+        d3.axisBottom(yearRangeScale)
+          .ticks(tickCount)
+          .tickFormat(d3.format("d"))
+      );
+      axisG.selectAll("text").attr("font-size", "9px");
+      axisG.selectAll(".domain, .tick line").attr("stroke", "var(--chart-axis)");
+
+      // creates the brush for the year range slider
+      yearRangeBrush = d3.brushX()
+        .extent([[0, 0], [innerW, innerH]])
+        .on("brush", function (event) {
+          if (yearRangeBrushProgrammatic) {
+            return;
+          }
+          if (!event.sourceEvent) {
+            return;
+          }
+          if (!event.selection) {
+            return;
+          }
+          applyYearRangeBrushSelection(event.selection, { snap: false, doRefresh: true });
+        })
+        .on("end", function (event) {
+          if (yearRangeBrushProgrammatic) {
+            return;
+          }
+          if (!event.sourceEvent) {
+            return;
+          }
+          if (!event.selection) {
+            yearRangeBrushProgrammatic = true;
+            try {
+              yearRangeBrushG.call(yearRangeBrush.move, [0, yearRangeInnerWidth]);
+            } finally {
+              yearRangeBrushProgrammatic = false;
+            }
+            filters.yearMin = null;
+            filters.yearMax = null;
+            updateYearRangeReadout();
+            refresh();
+            return;
+          }
+          applyYearRangeBrushSelection(event.selection, { snap: true, doRefresh: true });
+        });
+
+      // creates the brush group for the year range slider
+      yearRangeBrushG = g.append("g").attr("class", "year-range-brush").call(yearRangeBrush);
+      syncYearRangeSliderFromFilters();
+    }
+
+    // updates the text content of the chart section heading element to display the current year range
+    function updateChartSectionHeadings() {
+      const headingEl = document.getElementById("timeline-chart-heading");
+      if (!headingEl || !winnersData.length) {
+        return;
+      }
+      const [dMin, dMax] = getDataYearExtent(winnersData);
+      const yMin = filters.yearMin != null ? filters.yearMin : dMin;
+      const yMax = filters.yearMax != null ? filters.yearMax : dMax;
+      headingEl.textContent = `Timeline of Nobel winners (${yMin}–${yMax})`;
+    }
+
+    // ----- Bar chart -----
+
+    // filters the rows for a given category for the bar chart
+    function rowsForBarCategory(updatedRows, category) {
+      return updatedRows.filter((row) => {
+        if (!row.categories || !row.categories.includes(category)) {
+          return false;
+        }
+        if (filters.categoryAll) {
+          return true;
+        }
+        return filters.categorySelected.has(category);
+      });
+    }
+
+    // opens the bar category detail panel for the bar chart
+    function openBarCategoryDetailPanel(category, updatedRows) {
+      closeMapCountryDetailPanel();
+      closeLineYearDetailPanel();
+      barSelectedCategory = category;
+      if (barChart) {
+        barChart.selectAll(".chart-bar").classed("bar-selected", (d) => d.category === category);
+      }
+      renderBarCategoryDetailContent(category, updatedRows);
+    }
+
+    // closes the bar category detail panel for the bar chart
+    function closeBarCategoryDetailPanel() {
+      barSelectedCategory = null;
+      if (barChart) {
+        barChart.selectAll(".chart-bar").classed("bar-selected", false);
+      }
+      const panel = document.getElementById("bar-category-detail");
+      const listElement = document.getElementById("bar-detail-list");
+      const emptyElement = document.getElementById("bar-detail-empty");
+      if (panel) {
+        panel.hidden = true;
+      }
+      if (listElement) {
+        listElement.hidden = true;
+        listElement.innerHTML = "";
+      }
+      if (emptyElement) {
+        emptyElement.hidden = true;
+      }
+    }
+
+    // creates the content for the bar category detail panel for the bar chart
+    function renderBarCategoryDetailContent(category, updatedRows) {
+      const rows = rowsForBarCategory(updatedRows, category);
+      const links = laureateNameLinksFromRows(rows);
+      renderNameLinkDetailPanel({
+        panelId: "bar-category-detail",
+        titleId: "bar-detail-title",
+        summaryId: "bar-detail-summary",
+        listId: "bar-detail-list",
+        emptyId: "bar-detail-empty",
+        title: category,
+        summary: `${d3.format("d")(rows.length)} laureate${rows.length === 1 ? "" : "s"} in this category.`,
+        nameLinkMap: links
+      });
+    }
+
     // initializes the bar chart with the dimensions and the svg
     function initializeBarChart() {
-      const svgWidth = 700;
-      const svgHeight = 450;
-      const margin = { top: 50, right: 30, bottom: 90, left: 90 };
+      // gets the dimensions for the bar chart
+      const svgWidth = 720;
+      const svgHeight = 420;
+      const margin = { top: 24, right: 28, bottom: 48, left: 128 };
       barWidth = svgWidth - margin.left - margin.right;
       barHeight = svgHeight - margin.top - margin.bottom;
 
+      // creates the svg for the bar chart
       const svg = d3.select("#chart")
         .append("svg")
+        .attr("class", "chart-svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight);
 
       barChart = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-      // title
-      svg.append("text")
-        .attr("x", svgWidth / 2)
-        .attr("y", 25)
-        .style("text-anchor", "middle")
-        .style("font-size", "20px")
-        .text("Nobel Prizes by Category");
+      // creates the background for the bar chart
+      barChart.append("rect")
+        .attr("class", "chart-plot-bg")
+        .attr("width", barWidth)
+        .attr("height", barHeight);
+
+      // creates the y grid for the bar chart
+      barYGrid = barChart.append("g")
+        .attr("class", "y-grid");
 
       // sets the scales for the x and y axes
-      barScaleX = d3.scaleBand()
-        .range([0, barWidth])
-        .padding(0.2);
-      barScaleY = d3.scaleLinear()
-        .range([barHeight, 0]);
+      barScaleX = d3.scaleLinear()
+        .range([0, barWidth]);
+      barScaleY = d3.scaleBand()
+        .range([0, barHeight])
+        .padding(0.28);
 
       // makes the x and y axes
       barAxisX = barChart.append("g").attr("transform", `translate(0,${barHeight})`);
@@ -183,83 +1320,253 @@
     // updates the bar chart with the updated rows
     function updateBar(updatedRows) {
       const barTooltip = d3.select("#tooltip");
+      // gets the data for the bar chart (category entries)
+      const categoryEntries = filters.categoryAll
+        ? updatedRows.flatMap((row) => row.categories)
+        : updatedRows.flatMap((row) =>
+          row.categories.filter((c) => filters.categorySelected.has(c))
+        );
       const categoryMap = d3.rollup(
-        updatedRows.flatMap((row) => row.categories),
+        categoryEntries,
         (values) => values.length,
         (category) => category
       );
 
-      // gets the category data
-      const categoryData = Array.from(categoryMap, ([category, total]) => ({ category, total }));
+      // gets the category data and sorts it by total
+      const categoryData = Array.from(categoryMap, ([category, total]) => ({ category, total }))
+        .sort((a, b) => d3.descending(a.total, b.total));
 
-      // sets the domain for the x and y scales
-      barScaleX.domain(categoryData.map((d) => d.category));
-      barScaleY.domain([0, d3.max(categoryData, (d) => d.total) || 1]).nice();
+      if (barSelectedCategory && !categoryData.some((d) => d.category === barSelectedCategory)) {
+        closeBarCategoryDetailPanel();
+      }
 
-      // makes the x axis
-      barAxisX.call(d3.axisBottom(barScaleX))
+      // gets the maximum total for the bar chart
+      const maxTotal = categoryData.length ? d3.max(categoryData, (d) => d.total) || 0 : 0;
+      const xTop = Math.max(Math.ceil(maxTotal), 1);
+
+      // sets the domain for the x scale and y scale
+      barScaleX.domain([0, xTop]);
+      barScaleY.domain(categoryData.map((d) => d.category));
+
+      // sets the domain for the bar category colors
+      barCategoryColors.domain(categoryData.map((d) => d.category));
+
+      // gets the maximum x ticks for the bar chart for the x axis
+      const maxXTicks = 15;
+      let xTickStep = 1;
+      if (xTop > maxXTicks) {
+        xTickStep = Math.ceil(xTop / maxXTicks);
+      }
+      const xTickValues = d3.range(0, xTop + 1, xTickStep);
+      if (xTickValues[xTickValues.length - 1] !== xTop) {
+        xTickValues.push(xTop);
+      }
+
+      // makes the x grid for the bar chart
+      barYGrid.attr("transform", `translate(0,${barHeight})`)
+        .call(
+          d3.axisBottom(barScaleX)
+            .tickValues(xTickValues)
+            .tickSize(-barHeight)
+            .tickFormat("")
+        ).call((g) => g.select(".domain").remove());
+
+      // makes the x axis for the bar chart
+      barAxisX.call(
+        d3.axisBottom(barScaleX)
+          .tickValues(xTickValues)
+          .tickFormat(d3.format("d"))
+      )
         .selectAll("text")
-        .style("text-anchor", "middle");
+        .style("text-anchor", "middle")
+        .attr("dx", null)
+        .attr("dy", "0.71em")
+        .attr("transform", null);
 
-      // makes the y axis
-      barAxisY.call(d3.axisLeft(barScaleY).ticks(5));
+      // makes the y axis for the bar chart
+      barAxisY.call(d3.axisLeft(barScaleY));
 
-      // updates and creates the bars
-      barChart.selectAll(".bar")
+      // updates and creates the bars for the bar chart
+      const bars = barChart.selectAll(".chart-bar")
         .data(categoryData, (d) => d.category)
         .join(
           (enter) => enter
             .append("rect")
-            .attr("class", "bar")
-            .attr("x", (d) => barScaleX(d.category))
-            .attr("y", (d) => barScaleY(d.total))
-            .attr("width", barScaleX.bandwidth())
-            .attr("height", (d) => barHeight - barScaleY(d.total))
-            .on("mouseover", function (event, d) {
-              barTooltip
-                .html(`<strong>${d.category}</strong>: ${d.total}`)
-                .style("opacity", 1);
-            })
-            .on("mousemove", function (event) {
-              barTooltip
-                .style("left", `${event.pageX + 12}px`)
-                .style("top", `${event.pageY - 28}px`);
-            })
-            .on("mouseout", function () {
-              barTooltip.style("opacity", 0);
-            }),
+            .attr("class", "chart-bar")
+            .attr("x", 0)
+            .attr("y", (d) => barScaleY(d.category))
+            .attr("width", (d) => barScaleX(d.total))
+            .attr("height", barScaleY.bandwidth())
+            .attr("fill", (d) => barCategoryColors(d.category)),
           (update) => update
-            .attr("x", (d) => barScaleX(d.category))
-            .attr("y", (d) => barScaleY(d.total))
-            .attr("width", barScaleX.bandwidth())
-            .attr("height", (d) => barHeight - barScaleY(d.total)),
+            .attr("x", 0)
+            .attr("y", (d) => barScaleY(d.category))
+            .attr("width", (d) => barScaleX(d.total))
+            .attr("height", barScaleY.bandwidth())
+            .attr("fill", (d) => barCategoryColors(d.category)),
           (exit) => exit.remove()
-        );
+        )
+        .classed("bar-selected", (d) => d.category === barSelectedCategory)
+        .on("mouseover", function (event, d) {
+          barTooltip
+            .html(
+              `<strong>${d.category}</strong>: ${d.total}<br><span style="opacity:0.85;font-size:12px">Click for laureates</span>`
+            )
+            .style("opacity", 1);
+        })
+        .on("mousemove", function (event) {
+          barTooltip
+            .style("left", `${event.pageX + 12}px`)
+            .style("top", `${event.pageY - 28}px`);
+        })
+        .on("mouseout", function () {
+          barTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          event.stopPropagation();
+          openBarCategoryDetailPanel(d.category, updatedRows);
+        });
+
+      if (barSelectedCategory) {
+        renderBarCategoryDetailContent(barSelectedCategory, updatedRows);
+      }
+    }
+
+    // ----- Line chart -----
+
+    // checks if the year is included in the line chart filters
+    function yearIncludedInLineChartFilters(year) {
+      if (!Number.isFinite(year)) {
+        return false;
+      }
+      if (filters.yearMin !== null && year < filters.yearMin) {
+        return false;
+      }
+      if (filters.yearMax !== null && year > filters.yearMax) {
+        return false;
+      }
+      return true;
+    }
+
+    // gets the domain for the x scale for the line chart
+    function lineChartXDomain(yearlyData, fallbackYear) {
+      const hasData = yearlyData.length > 0;
+      const extent = hasData ? d3.extent(yearlyData, (d) => d.Year) : null;
+
+      let lo;
+      let hi;
+
+      if (filters.yearMin !== null && filters.yearMax !== null) {
+        lo = filters.yearMin;
+        hi = filters.yearMax;
+      } else if (hasData) {
+        lo = filters.yearMin !== null ? filters.yearMin : extent[0];
+        hi = filters.yearMax !== null ? filters.yearMax : extent[1];
+      } else if (filters.yearMin !== null || filters.yearMax !== null) {
+        lo = filters.yearMin !== null ? filters.yearMin : filters.yearMax;
+        hi = filters.yearMax !== null ? filters.yearMax : filters.yearMin;
+      } else {
+        lo = hi = fallbackYear;
+      }
+
+      // swaps the lo and hi values if lo is greater than hi
+      if (lo > hi) {
+        const temp = lo;
+        lo = hi;
+        hi = temp;
+      }
+      return [lo, hi];
+    }
+
+    // filters the rows for a given year and gender for the line chart
+    function rowsForLineYearGender(updatedRows, year, gender) {
+      return updatedRows.filter((row) => {
+        if (row.gender !== gender) {
+          return false;
+        }
+        const ys = row.years.length ? row.years : (row.year != null ? [row.year] : []);
+        return ys.some((y) => Number.isFinite(y) && y === year && yearIncludedInLineChartFilters(y));
+      });
+    }
+
+    // opens the line year gender detail panel for the line chart
+    function openLineYearGenderDetailPanel(year, gender, updatedRows) {
+      closeMapCountryDetailPanel();
+      closeBarCategoryDetailPanel();
+      lineSelectedYear = year;
+      lineSelectedGender = gender;
+      if (lineChart) {
+        lineChart.selectAll("circle.dot-men").classed("line-dot-selected", (d) => d.Year === year && gender === "Male");
+        lineChart.selectAll("circle.dot-women").classed("line-dot-selected", (d) => d.Year === year && gender === "Female");
+      }
+      renderLineYearDetailContent(year, gender, updatedRows);
+    }
+
+    // closes the line year detail panel for the line chart
+    function closeLineYearDetailPanel() {
+      lineSelectedYear = null;
+      lineSelectedGender = null;
+      if (lineChart) {
+        lineChart.selectAll("circle.dot-men").classed("line-dot-selected", false);
+        lineChart.selectAll("circle.dot-women").classed("line-dot-selected", false);
+      }
+      const panel = document.getElementById("line-year-detail");
+      const listElement = document.getElementById("line-detail-list");
+      const emptyElement = document.getElementById("line-detail-empty");
+      if (panel) {
+        panel.hidden = true;
+      }
+      if (listElement) {
+        listElement.hidden = true;
+        listElement.innerHTML = "";
+      }
+      if (emptyElement) {
+        emptyElement.hidden = true;
+      }
+    }
+
+    // shows the content for the line year detail panel for the line chart
+    function renderLineYearDetailContent(year, gender, updatedRows) {
+      const rows = rowsForLineYearGender(updatedRows, year, gender);
+      const links = laureateNameLinksFromRows(rows);
+      const gLabel = gender === "Male" ? "Men" : "Women";
+      renderNameLinkDetailPanel({
+        panelId: "line-year-detail",
+        titleId: "line-detail-title",
+        summaryId: "line-detail-summary",
+        listId: "line-detail-list",
+        emptyId: "line-detail-empty",
+        title: `${gLabel}, ${year}`,
+        summary: `${d3.format("d")(rows.length)} laureate${rows.length === 1 ? "" : "s"}.`,
+        nameLinkMap: links
+      });
     }
 
     // initializes the line chart with the dimensions and the svg
     function initializeLineChart() {
-      const svgWidth = 900;
-      const svgHeight = 500;
-      const margin = { top: 60, right: 60, bottom: 60, left: 60 };
+      // gets the dimensions for the line chart
+      const svgWidth = 920;
+      const svgHeight = 480;
+      const margin = { top: 28, right: 110, bottom: 52, left: 56 };
       lineWidth = svgWidth - margin.left - margin.right;
       lineHeight = svgHeight - margin.top - margin.bottom;
 
+      // creates the svg for the line chart
       const svg = d3.select("#line-chart")
         .append("svg")
+        .attr("class", "chart-svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight);
 
       lineChart = svg.append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-      // title
-      lineChart.append("text")
-        .attr("x", lineWidth / 2)
-        .attr("y", -20)
-        .style("font-size", "20px")
-        .attr("text-anchor", "middle")
-        .text("Nobel Winners Men vs Woman");
+      lineChart.append("rect")
+        .attr("class", "chart-plot-bg")
+        .attr("width", lineWidth)
+        .attr("height", lineHeight);
+
+      lineChart.append("g").attr("class", "line-y-grid");
 
       // sets the scales for the x and y axes
       lineScaleX = d3.scaleLinear()
@@ -272,20 +1579,79 @@
         .attr("transform", `translate(0,${lineHeight})`);
       lineAxisY = lineChart.append("g");
 
-      // makes the x axis labels
+      // creates the x axis title for the line chart
       lineChart.append("text")
+        .attr("class", "axis-title")
         .attr("x", lineWidth / 2)
-        .attr("y", lineHeight + 45)
+        .attr("y", lineHeight + 40)
         .attr("text-anchor", "middle")
         .text("Year");
 
-      // makes the y axis labels
+      // creates the y axis title for the line chart
       lineChart.append("text")
+        .attr("class", "axis-title")
         .attr("transform", "rotate(-90)")
         .attr("x", -lineHeight / 2)
-        .attr("y", -45)
+        .attr("y", -42)
         .attr("text-anchor", "middle")
-        .text("Number of Winners");
+        .text("Winners per year");
+
+      // creates the gender color scale for the line chart
+      const genderColor = d3.scaleOrdinal()
+        .domain(["Men", "Women"])
+        .range(["#1e3a5f", "#9a6b2f"]);
+
+      // creates the legend for the line chart
+      const legend = svg.append("g")
+        .attr("transform", `translate(${margin.left + lineWidth + 15}, ${margin.top + 14})`);
+
+      // creates the background for the legend
+      legend.append("rect")
+        .attr("class", "legend-panel-bg")
+        .attr("x", -12)
+        .attr("y", -10)
+        .attr("width", 148)
+        .attr("height", 72);
+
+      // creates the title for the legend
+      legend.append("text")
+        .attr("class", "legend-title")
+        .attr("x", 0)
+        .attr("y", 4)
+        .text("Sex");
+
+      // creates the legend items for the legend
+      const legendItem = legend.selectAll("g")
+        .data(genderColor.domain())
+        .enter()
+        .append("g")
+        .attr("transform", (d, i) => `translate(0, ${22 + i * 22})`);
+
+      // creates the line for the legend items
+      legendItem.append("line")
+        .attr("x1", 0)
+        .attr("x2", 28)
+        .attr("y1", 0)
+        .attr("y2", 0)
+        .attr("stroke", (d) => genderColor(d))
+        .attr("stroke-width", 3)
+        .attr("stroke-linecap", "round");
+
+      // creates the circle for the legend items
+      legendItem.append("circle")
+        .attr("cx", 14)
+        .attr("cy", 0)
+        .attr("r", 4)
+        .attr("fill", (d) => genderColor(d))
+        .attr("stroke", "#fff")
+        .attr("stroke-width", 1);
+
+      // creates the text for the legend items
+      legendItem.append("text")
+        .attr("class", "legend-label")
+        .attr("x", 38)
+        .attr("y", 4)
+        .text((d) => d);
     }
 
     // updates the line chart with the updated rows
@@ -296,7 +1662,7 @@
       const yearlyEntries = updatedRows.flatMap((row) => {
         const years = row.years.length ? row.years : [row.year];
         return years
-          .filter((year) => Number.isFinite(year))
+          .filter((year) => Number.isFinite(year) && yearIncludedInLineChartFilters(year))
           .map((year) => ({
             year,
             gender: row.gender
@@ -320,60 +1686,93 @@
         women: counts.women
       })).sort((a, b) => d3.ascending(a.Year, b.Year));
 
-      // default year if no data
+      // gets the fallback year if no data
       const fallbackYear = winnersData.length ? d3.min(winnersData, (d) => d.year) || 1901 : 1901;
 
       // gets the range of years and the maximum count of men and women
-      const yearRange = yearlyData.length ? d3.extent(yearlyData, (d) => d.Year) : [fallbackYear, fallbackYear];
-      const maxCount = yearlyData.length ? d3.max(yearlyData, (d) => Math.max(d.men, d.women)) || 1: 1;
+      const maxCount = yearlyData.length ? d3.max(yearlyData, (d) => Math.max(d.men, d.women)) || 1 : 1;
+      const yTop = Math.max(Math.ceil(maxCount), 1);
 
       // sets the domain for the x and y scales
+      const yearRange = lineChartXDomain(yearlyData, fallbackYear);
       lineScaleX.domain(yearRange);
-      lineScaleY.domain([0, maxCount]).nice();
+      lineScaleY.domain([0, yTop]);
 
-      // makes the x and y axes
-      lineAxisX.call(d3.axisBottom(lineScaleX).tickFormat(d3.format("d")));
-      lineAxisY.call(d3.axisLeft(lineScaleY));
+      // gets the maximum y ticks for the y axis
+      const maxYTicks = 15;
+      let yTickStep = 1;
+      if (yTop > maxYTicks) {
+        yTickStep = Math.ceil(yTop / maxYTicks);
+      }
+      const yTickValues = d3.range(0, yTop + 1, yTickStep);
+      if (yTickValues[yTickValues.length - 1] !== yTop) {
+        yTickValues.push(yTop);
+      }
 
-      // makes the men line
+      // gets the maximum x ticks for the x axis
+      const maxXTicks = 15;
+      const xLo = yearRange[0];
+      const xHi = yearRange[1];
+      const xBottom = Math.ceil(xLo);
+      const xTop = Math.floor(xHi);
+      const spanYears = Math.max(0, xTop - xBottom);
+      let xTickStep = 1;
+      if (spanYears > maxXTicks) {
+        xTickStep = Math.ceil(spanYears / maxXTicks);
+      }
+      const xTickValues = d3.range(xBottom, xTop + 1, xTickStep);
+      if (xTickValues.length && xTickValues[xTickValues.length - 1] !== xTop) {
+        xTickValues.push(xTop);
+      }
+
+      // makes the x axis for the line chart
+      lineAxisX.call(
+        d3.axisBottom(lineScaleX)
+          .tickValues(xTickValues.length ? xTickValues : undefined)
+          .tickFormat(d3.format("d"))
+      );
+      lineAxisY.call(d3.axisLeft(lineScaleY).tickValues(yTickValues).tickFormat(d3.format("d")));
+
+      // makes the y grid for the line chart
+      lineChart.select(".line-y-grid").call(
+        d3.axisLeft(lineScaleY)
+          .tickValues(yTickValues)
+          .tickSize(-lineWidth)
+          .tickFormat("")
+      ).call((g) => g.select(".domain").remove());
+
+      // makes the men line for the line chart
       const menLine = d3.line()
         .x((d) => lineScaleX(d.Year))
         .y((d) => lineScaleY(d.men));
 
-      // makes the women line
+      // makes the women line for the line chart
       const womenLine = d3.line()
         .x((d) => lineScaleX(d.Year))
         .y((d) => lineScaleY(d.women));
 
-      // updates and creates the men line
+      // updates and creates the men line for the line chart
       lineChart.selectAll("path.line-men")
         .data([yearlyData])
         .join("path")
         .attr("class", "line-men")
-        .attr("fill", "none")
-        .attr("stroke", "steelblue")
-        .attr("stroke-width", 2)
         .attr("d", menLine);
 
-      // updates and creates the women line
+      // updates and creates the women line for the line chart
       lineChart.selectAll("path.line-women")
         .data([yearlyData])
         .join("path")
         .attr("class", "line-women")
-        .attr("fill", "none")
-        .attr("stroke", "orange")
-        .attr("stroke-width", 2)
         .attr("d", womenLine);
 
-      // updates and creates the men dots
+      // updates and creates the men dots for the line chart
       lineChart.selectAll("circle.dot-men")
         .data(yearlyData, (d) => d.Year)
         .join(
           (enter) => enter
             .append("circle")
             .attr("class", "dot-men")
-            .attr("r", 3)
-            .style("fill", "steelblue")
+            .attr("r", 4)
             .attr("cx", (d) => lineScaleX(d.Year))
             .attr("cy", (d) => lineScaleY(d.men)),
           (update) => update
@@ -381,10 +1780,13 @@
             .attr("cy", (d) => lineScaleY(d.men)),
           (exit) => exit.remove()
         )
+        .classed("line-dot-selected", (d) => lineSelectedYear === d.Year && lineSelectedGender === "Male")
         .on("mouseover", function (event, d) {
           lineTooltip
             .style("opacity", 1)
-            .html(`Year: ${d.Year}<br>Men: ${d.men}`);
+            .html(
+              `Year: ${d.Year}<br>Men: ${d.men}<br><span style="opacity:0.85;font-size:12px">Click for names</span>`
+            );
         })
         .on("mousemove", function (event) {
           lineTooltip
@@ -393,6 +1795,10 @@
         })
         .on("mouseout", function () {
           lineTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          event.stopPropagation();
+          openLineYearGenderDetailPanel(d.Year, "Male", updatedRows);
         });
 
       // updates and creates the women dots
@@ -402,8 +1808,7 @@
           (enter) => enter
             .append("circle")
             .attr("class", "dot-women")
-            .attr("r", 3)
-            .style("fill", "orange")
+            .attr("r", 4)
             .attr("cx", (d) => lineScaleX(d.Year))
             .attr("cy", (d) => lineScaleY(d.women)),
           (update) => update
@@ -411,10 +1816,13 @@
             .attr("cy", (d) => lineScaleY(d.women)),
           (exit) => exit.remove()
         )
+        .classed("line-dot-selected", (d) => lineSelectedYear === d.Year && lineSelectedGender === "Female")
         .on("mouseover", function (event, d) {
           lineTooltip
             .style("opacity", 1)
-            .html(`Year: ${d.Year}<br>Women: ${d.women}`);
+            .html(
+              `Year: ${d.Year}<br>Women: ${d.women}<br><span style="opacity:0.85;font-size:12px">Click for names</span>`
+            );
         })
         .on("mousemove", function (event) {
           lineTooltip
@@ -423,159 +1831,181 @@
         })
         .on("mouseout", function () {
           lineTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          event.stopPropagation();
+          openLineYearGenderDetailPanel(d.Year, "Female", updatedRows);
         });
+
+      if (lineSelectedYear !== null && lineSelectedGender) {
+        const hasYear = yearlyData.some((d) => d.Year === lineSelectedYear);
+        if (!hasYear) {
+          closeLineYearDetailPanel();
+        } else {
+          renderLineYearDetailContent(lineSelectedYear, lineSelectedGender, updatedRows);
+        }
+      }
     }
 
-    // initializes the timeline chart with the dimensions and the svg
-    function initializeTimelineChart() {
-      const svgWidth = 1300;
-      const svgHeight = 750;
-      const margin = { top: 60, right: 30, bottom: 60, left: 60 };
-      timelineWidth = svgWidth - margin.left - margin.right;
-      timelineHeight = svgHeight - margin.top - margin.bottom;
-      timelineCenterY = timelineHeight / 2;
+    // ----- Map (chart) -----
 
-      const svg = d3.select("#timeline-chart")
-        .append("svg")
-        .attr("width", svgWidth)
-        .attr("height", svgHeight);
-
-      timelineChart = svg.append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-      // title
-      svg.append("text")
-        .attr("x", svgWidth / 2)
-        .attr("y", 30)
-        .style("text-anchor", "middle")
-        .style("font-size", "20px")
-        .text("Nobel Prize Timeline");
-
-      // sets the scales for the x axis
-      timelineScaleX = d3.scaleLinear()
-        .range([0, timelineWidth]);
-
-      // makes axis and center line
-      timelineAxisX = timelineChart.append("g")
-        .attr("transform", `translate(0,${timelineCenterY})`);
-
-      // makes the center line
-      timelineChart.append("line")
-        .attr("x1", 0)
-        .attr("x2", timelineWidth)
-        .attr("y1", timelineCenterY)
-        .attr("y2", timelineCenterY)
-        .style("stroke", "black")
-        .style("stroke-width", 2);
+    // gets the legend entries for the map chart, one legend row per palette color when using log-quantize (avoids duplicate swatches)
+    function mapQuantLegendEntries(quantizeScale, maxPrize) {
+      const [dMin, dMax] = quantizeScale.domain();
+      const n = MAP_COLORS.length;
+      const step = (dMax - dMin) / n;
+      return MAP_COLORS.map((fill, i) => {
+        const loL = dMin + i * step;
+        const hiL = dMin + (i + 1) * step;
+        const loP = Math.expm1(loL);
+        const hiP = Math.expm1(Math.min(hiL, dMax));
+        let low = i === 0 ? Math.max(1, Math.ceil(loP)) : Math.ceil(loP);
+        let high = i === n - 1 ? maxPrize : Math.floor(hiP - 1e-9);
+        if (high < low) {
+          high = low;
+        }
+        const label =
+          low === high
+            ? d3.format("d")(low)
+            : `${d3.format("d")(low)}–${d3.format("d")(high)}`;
+        return { fill, label };
+      });
     }
 
-    // updates the timeline chart with the updated rows
-    function updateTimeline(updatedRows) {
-      const timelineTooltip = d3.select("#timeline-tooltip");
+    // opens the map country detail panel for the map chart
+    function openMapCountryDetailFromClick(displayName, dataKey, pathOrCircleNode) {
+      closeBarCategoryDetailPanel();
+      closeLineYearDetailPanel();
+      mapSelectedCountryKey = dataKey;
+      mapSelectedDisplayName = displayName;
+      if (mapSvg) {
+        mapSvg.selectAll("path.country-shape").classed("country-selected", false);
+        mapSvg.selectAll("circle.missing-country-point").classed("missing-country-point-selected", false);
+      }
+      if (pathOrCircleNode) {
+        const sel = d3.select(pathOrCircleNode);
+        if (sel.node() && sel.node().tagName === "path") {
+          sel.classed("country-selected", true);
+        } else {
+          sel.classed("missing-country-point-selected", true);
+        }
+      }
+      renderMapCountryDetailContent(displayName, dataKey);
+    }
 
-      // normalizes to entries per winner-year
-      const timelineData = updatedRows.flatMap((row) => {
-        const years = row.years.length ? row.years : [row.year];
-        return years
-          .filter((year) => Number.isFinite(year))
-          .map((year) => ({
-            Winner: row.Winner || "Unknown",
-            Year: year
-          }));
+    // closes the map country detail panel for the map chart
+    function closeMapCountryDetailPanel() {
+      mapSelectedCountryKey = null;
+      mapSelectedDisplayName = "";
+      if (mapSvg) {
+        mapSvg.selectAll("path.country-shape").classed("country-selected", false);
+        mapSvg.selectAll("circle.missing-country-point").classed("missing-country-point-selected", false);
+      }
+      const panel = document.getElementById("map-country-detail");
+      const listElement = document.getElementById("map-detail-list");
+      const emptyElement = document.getElementById("map-detail-empty");
+      if (panel) {
+        panel.hidden = true;
+      }
+      if (listElement) {
+        listElement.hidden = true;
+        listElement.innerHTML = "";
+      }
+      if (emptyElement) {
+        emptyElement.hidden = true;
+      }
+    }
+
+    // shows the content for the map country detail panel for the map chart
+    function renderMapCountryDetailContent(displayName, dataKey) {
+      const titleElement = document.getElementById("map-detail-title");
+      const summaryElement = document.getElementById("map-detail-summary");
+      const listElement = document.getElementById("map-detail-list");
+      const emptyElement = document.getElementById("map-detail-empty");
+      const panel = document.getElementById("map-country-detail");
+      if (!titleElement || !summaryElement || !listElement || !emptyElement) {
+        return;
+      }
+      titleElement.textContent = displayName;
+      const winnerMap = mapLaureatesByCountryCache.get(dataKey);
+      const totalPrizes = mapPrizeMap.get(dataKey) || 0;
+      if (!winnerMap || winnerMap.size === 0) {
+        summaryElement.textContent =
+          totalPrizes > 0
+            ? `${d3.format("d")(totalPrizes)} prizes counted for this country; no named laureates for the current filters.`
+            : "No prizes for this country in the current filters.";
+        listElement.hidden = true;
+        listElement.innerHTML = "";
+        emptyElement.hidden = false;
+        emptyElement.textContent = "No laureate list to show.";
+        if (panel) {
+          panel.hidden = false;
+        }
+        return;
+      }
+      const rows = [...winnerMap.entries()].sort((a, b) => {
+        const ca = typeof a[1] === "object" ? a[1].count : a[1];
+        const cb = typeof b[1] === "object" ? b[1].count : b[1];
+        return cb - ca || a[0].localeCompare(b[0]);
       });
-
-      // default year if no data
-      const fallbackYear = winnersData.length ? d3.min(winnersData, (d) => d.year) || 1901 : 1901;
-
-      // gets the range of years
-      const yearRange = timelineData.length ? d3.extent(timelineData, (d) => d.Year) : [fallbackYear, fallbackYear];
-
-      // sets the domain for the x scale
-      timelineScaleX.domain(yearRange);
-      timelineAxisX.call(d3.axisBottom(timelineScaleX).tickFormat(d3.format("d")));
-
-      // assigns random y positions similar to timeline page
-      timelineData.forEach((d) => {
-        const padding = 20;
-        d.randomY = padding + Math.random() * (timelineHeight - 2 * padding);
-      });
-
-      // draws line connectors
-      timelineChart.selectAll(".timeline-connector")
-        .data(timelineData, (d) => `${d.Winner}-${d.Year}`)
-        .join(
-          (enter) => enter
-            .append("line")
-            .attr("class", "timeline-connector")
-            .attr("x1", (d) => timelineScaleX(d.Year))
-            .attr("x2", (d) => timelineScaleX(d.Year))
-            .attr("y1", timelineCenterY)
-            .attr("y2", (d) => d.randomY)
-            .style("stroke", "grey")
-            .style("stroke-width", 1)
-            .style("opacity", 0.5),
-          (update) => update
-            .attr("x1", (d) => timelineScaleX(d.Year))
-            .attr("x2", (d) => timelineScaleX(d.Year))
-            .attr("y1", timelineCenterY)
-            .attr("y2", (d) => d.randomY),
-          (exit) => exit.remove()
-        );
-
-      // draws timeline dots
-      timelineChart.selectAll(".timeline-dot")
-        .data(timelineData, (d) => `${d.Winner}-${d.Year}`)
-        .join(
-          (enter) => enter
-            .append("circle")
-            .attr("class", "circle timeline-dot")
-            .attr("cx", (d) => timelineScaleX(d.Year))
-            .attr("cy", (d) => d.randomY)
-            .attr("r", 4),
-          (update) => update
-            .attr("cx", (d) => timelineScaleX(d.Year))
-            .attr("cy", (d) => d.randomY),
-          (exit) => exit.remove()
-        )
-        .on("mouseover", function (event, d) {
-          d3.select(this).attr("r", 6);
-          timelineTooltip
-            .html(`<strong>${d.Winner}</strong> in ${d.Year}`)
-            .style("opacity", 1);
-        })
-        .on("mousemove", function (event) {
-          timelineTooltip
-            .style("left", `${event.pageX + 10}px`)
-            .style("top", `${event.pageY - 20}px`);
-        })
-        .on("mouseout", function () {
-          d3.select(this).attr("r", 4);
-          timelineTooltip.style("opacity", 0);
-        });
+      let sumListed = 0;
+      const frag = document.createDocumentFragment();
+      for (const [name, info] of rows) {
+        const count = typeof info === "object" ? info.count : info;
+        const url = typeof info === "object" && info.link ? String(info.link).trim() : "";
+        sumListed += count;
+        const li = document.createElement("li");
+        const w = count === 1 ? "prize" : "prizes";
+        if (url) {
+          const a = document.createElement("a");
+          a.href = url;
+          a.textContent = name;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          li.appendChild(a);
+          li.appendChild(document.createTextNode(` — ${d3.format("d")(count)} ${w}`));
+        } else {
+          li.textContent = `${name} — ${d3.format("d")(count)} ${w}`;
+        }
+        frag.appendChild(li);
+      }
+      listElement.innerHTML = "";
+      listElement.appendChild(frag);
+      listElement.hidden = false;
+      emptyElement.hidden = true;
+      let summary = `${d3.format("d")(rows.length)} laureates · ${d3.format("d")(sumListed)} prizes`;
+      if (totalPrizes !== sumListed) {
+        summary += ` · ${d3.format("d")(totalPrizes)} total prize-years attributed across listed countries for shared rows.`;
+      }
+      summaryElement.textContent = summary;
+      if (panel) {
+        panel.hidden = false;
+      }
     }
 
     // initializes the map chart with the dimensions and the svg
     function initializeMapChart() {
-      const svgWidth = 960;
-      const svgHeight = 550;
+      // gets the dimensions for the map chart
+      const svgWidth = 820;
+      const svgHeight = 470;
 
+      // creates the svg for the map chart
       mapSvg = d3.select("#map-chart")
         .append("svg")
+        .attr("class", "chart-svg")
         .attr("width", svgWidth)
         .attr("height", svgHeight);
 
       // makes the projection for the map
       mapProjection = d3.geoNaturalEarth1()
-        .scale(145)
-        .translate([svgWidth / 2, (svgHeight / 2) - 20]);
+        .scale(132)
+        .translate([svgWidth / 2, svgHeight / 2 - 24]);
 
       // makes the path for the map
       mapPath = d3.geoPath().projection(mapProjection);
 
-      // logs scale valuesfor the map
+      // log transform for binning when there are more distinct prize counts than palette colors
       mapLogScale = (value) => Math.log1p(value);
-      mapColorScale = d3.scaleSequential()
-        .interpolator(d3.interpolateBlues);
 
       // renames countries to match the map
       mapNameAliases = {
@@ -595,8 +2025,7 @@
 
       // makes the legend group for the map
       mapLegendGroup = mapSvg.append("g")
-        .attr("class", "legend")
-        .attr("transform", "translate(0,500)");
+        .attr("class", "legend map-legend");
 
       // loads the geojson data for the map
       d3.json("https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json")
@@ -616,20 +2045,83 @@
 
       const mapTooltip = d3.select("#map-tooltip");
 
-      // rolls up the data to the number of prizes for each country
-      mapPrizeMap = d3.rollup(
-        updatedRows,
-        (values) => values.length,
-        (row) => row.country
-      );
+      // creates the prize totals map and the laureates by country map
+      const prizeTotals = new Map();
+      const laureatesByCountry = new Map();
 
-      // gets the max number of prizes
-      const maxPrizes = d3.max(Array.from(mapPrizeMap.values())) || 0;
+      // iterates over the updated rows and counts the prize years and laureates by country
+      for (const row of updatedRows) {
+        const n = countPrizeYearsInCurrentFilter(row);
+        if (n <= 0) {
+          continue;
+        }
+        const name = (row.Winner || "").trim();
+        if (!name) {
+          continue;
+        }
+        const countries =
+          row.representedCountries && row.representedCountries.length
+            ? row.representedCountries
+            : row.country
+              ? [row.country]
+              : [];
+        for (const c of countries) {
+          if (!c) {
+            continue;
+          }
+          // sets the prize totals for the country
+          prizeTotals.set(c, (prizeTotals.get(c) || 0) + n);
+          if (!laureatesByCountry.has(c)) {
+            // sets the laureates by country map
+            laureatesByCountry.set(c, new Map());
+          }
+          // gets the winners map for the country with the name as the key so we can count the prizes and links
+          const winnersMap = laureatesByCountry.get(c);
+          const prev = winnersMap.get(name);
+          const rowLink = (splitPipeValues(row["Link on official website"] || "")[0] || "").trim();
+          const nextCount = (prev ? prev.count : 0) + n;
+          const link = (prev && prev.link) || rowLink || "";
+          winnersMap.set(name, { count: nextCount, link });
+        }
+      }
 
-      // sets the domain for the color scale
-      mapColorScale.domain([mapLogScale(0), mapLogScale(maxPrizes)]);
+      // sets the prize totals map and the laureates by country map
+      mapPrizeMap = prizeTotals;
+      mapLaureatesByCountryCache = laureatesByCountry;
 
-      // gets the number of prizes for a country
+      // gets the distinct positive prize counts in this filtered dataset (sorted ascending)
+      const positiveSorted = [
+        ...new Set(
+          Array.from(mapPrizeMap.values()).filter((v) => v > 0)
+        ),
+      ].sort((a, b) => a - b);
+      const kDistinct = positiveSorted.length;
+
+      // creates the prize quantize scale for the map chart
+      const prizeQuantize =
+        kDistinct > MAP_COLORS.length
+          ? d3.scaleQuantize()
+              .domain([mapLogScale(positiveSorted[0]), mapLogScale(positiveSorted[kDistinct - 1])])
+              .range(MAP_COLORS)
+          : null;
+
+      // gets the color for a prize value for the map chart
+      const colorForPrize = (value) => {
+        if (!value) {
+          return "#e6e2d8";
+        }
+        if (kDistinct === 0) {
+          return "#e6e2d8";
+        }
+        const rank = positiveSorted.indexOf(value);
+        if (kDistinct <= MAP_COLORS.length) {
+          const r = rank >= 0 ? rank : kDistinct - 1;
+          return MAP_COLORS[MAP_COLORS.length - kDistinct + r];
+        }
+        return prizeQuantize(mapLogScale(value));
+      };
+
+      // gets the number of prizes for a country for the map chart
       const getPrizeValue = (mapName) => {
         const dataName = mapNameAliases[mapName] || mapName;
         return mapPrizeMap.get(dataName) || 0;
@@ -643,14 +2135,18 @@
         .attr("d", mapPath)
         .attr("fill", (d) => {
           const value = getPrizeValue(d.properties.name);
-          return value ? mapColorScale(mapLogScale(value)) : "lightgray";
+          return colorForPrize(value);
         })
-        .attr("stroke", "black")
-        .attr("stroke-width", 0.5)
+        .classed(
+          "country-selected",
+          (d) => (mapNameAliases[d.properties.name] || d.properties.name) === mapSelectedCountryKey
+        )
         .on("mouseover", function (event, d) {
           mapTooltip
             .style("opacity", 1)
-            .html(`<strong>${d.properties.name}</strong><br>Prizes: ${getPrizeValue(d.properties.name)}`);
+            .html(
+              `<strong>${d.properties.name}</strong><br>Prizes: ${getPrizeValue(d.properties.name)}<br><span style="opacity:0.85;font-size:12px">Click for laureates</span>`
+            );
         })
         .on("mousemove", function (event) {
           mapTooltip
@@ -659,63 +2155,214 @@
         })
         .on("mouseout", function () {
           mapTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          event.stopPropagation();
+          const dataKey = mapNameAliases[d.properties.name] || d.properties.name;
+          openMapCountryDetailFromClick(d.properties.name, dataKey, this);
         });
 
-      // draws the points for the countries that don't have a polygon in the geojson
+      // creates the missing country points for the map chart
+      const pointData = mapPointCountries.filter((d) => (mapPrizeMap.get(d.dataName) || 0) > 0);
       mapSvg.selectAll("circle.missing-country-point")
-        .data(mapPointCountries.filter((d) => (mapPrizeMap.get(d.dataName) || 0) > 0))
+        .data(pointData)
         .join(
-          (enter) => enter.append("circle")
-            .attr("class", "missing-country-point")
-            .attr("cx", (d) => mapProjection(d.coordinates)[0])
-            .attr("cy", (d) => mapProjection(d.coordinates)[1])
-            .attr("r", 3)
-            .attr("fill", (d) => mapColorScale(mapLogScale(mapPrizeMap.get(d.dataName) || 0)))
-            .attr("stroke", "black")
-            .attr("stroke-width", 0.5)
-            .on("mouseover", function (event, d) {
-              mapTooltip
-                .style("opacity", 1)
-                .html(`<strong>${d.mapLabel}</strong><br>Prizes: ${mapPrizeMap.get(d.dataName) || 0}`);
-            })
-            .on("mousemove", function (event) {
-              mapTooltip
-                .style("left", `${event.pageX + 10}px`)
-                .style("top", `${event.pageY - 20}px`);
-            })
-            .on("mouseout", function () {
-              mapTooltip.style("opacity", 0);
-            }),
+          (enter) =>
+            enter
+              .append("circle")
+              .attr("class", "missing-country-point")
+              .attr("cx", (d) => mapProjection(d.coordinates)[0])
+              .attr("cy", (d) => mapProjection(d.coordinates)[1])
+              .attr("r", 3)
+              .attr("fill", (d) => colorForPrize(mapPrizeMap.get(d.dataName) || 0))
+              .attr("stroke", "rgba(26, 26, 26, 0.45)")
+              .attr("stroke-width", 0.55),
+          (update) =>
+            update
+              .attr("cx", (d) => mapProjection(d.coordinates)[0])
+              .attr("cy", (d) => mapProjection(d.coordinates)[1])
+              .attr("fill", (d) => colorForPrize(mapPrizeMap.get(d.dataName) || 0)),
           (exit) => exit.remove()
+        )
+        .classed("missing-country-point-selected", (d) => d.dataName === mapSelectedCountryKey)
+        .on("mouseover", function (event, d) {
+          mapTooltip
+            .style("opacity", 1)
+            .html(
+              `<strong>${d.mapLabel}</strong><br>Prizes: ${mapPrizeMap.get(d.dataName) || 0}<br><span style="opacity:0.85;font-size:12px">Click for laureates</span>`
+            );
+        })
+        .on("mousemove", function (event) {
+          mapTooltip
+            .style("left", `${event.pageX + 10}px`)
+            .style("top", `${event.pageY - 20}px`);
+        })
+        .on("mouseout", function () {
+          mapTooltip.style("opacity", 0);
+        })
+        .on("click", function (event, d) {
+          event.stopPropagation();
+          openMapCountryDetailFromClick(d.mapLabel, d.dataName, this);
+        });
+
+      // gets the legend entries for the map chart, one legend row per palette color when using log-quantize (avoids duplicate swatches)
+      const MAP_LEGEND_CAP = 5;
+      let legendCells;
+      if (positiveSorted.length === 0) {
+        legendCells = [{ fill: "#e6e2d8", label: "0" }];
+      } else if (positiveSorted.length <= MAP_LEGEND_CAP) {
+        legendCells = positiveSorted.map((v) => ({
+          fill: colorForPrize(v),
+          label: d3.format("d")(v),
+        }));
+      } else {
+        legendCells = mapQuantLegendEntries(
+          prizeQuantize,
+          positiveSorted[positiveSorted.length - 1]
         );
+      }
+      const nCells = legendCells.length;
 
-      // makes the legend for the map 
-      const legendStops = [0, 1, 3, 10, 30, 100, maxPrizes]
-        .filter((value, index, arr) => arr.indexOf(value) === index)
-        .sort((a, b) => a - b);
+      // gets the dimensions for the legend for the map chart
+      const svgWidth = +mapSvg.attr("width");
+      const svgHeight = +mapSvg.attr("height");
+      const legendMarginX = 14;
+      const legendBottomPad = 10;
+      const titleReserve = 140;
+      const usableW = Math.max(120, svgWidth - legendMarginX * 2);
+      const shapePadding = 4;
+      const legendShapeWidth = Math.max(
+        24,
+        Math.min(48, Math.floor((usableW - titleReserve) / Math.max(nCells, 1)) - shapePadding)
+      );
 
-      // makes the legend for the map
-      const legend = d3.legendColor()
-        .orient("horizontal")
-        .shapeWidth(40)
-        .shapePadding(2)
-        .labelOffset(6)
-        .title("Nobel prizes by country")
-        .scale(mapColorScale)
-        .cells(legendStops.map(mapLogScale))
-        .labels(legendStops.map(d3.format("d")));
+      // gets the dimensions for the legend shapes for the map chart and creates the legend group
+      const legendShapeHeight = 14;
+      const legendLabelGap = 9;
 
-      mapLegendGroup.call(legend);
+      mapLegendGroup.selectAll("*").remove();
+      mapLegendGroup.attr("transform", null);
+      mapLegendGroup.append("g")
+        .attr("class", "legendTitle")
+        .append("text")
+        .attr("x", 0)
+        .attr("y", 12)
+        .text("Prizes");
+
+      // creates the cells layer for the legend for the map chart
+      const cellsLayer = mapLegendGroup.append("g")
+        .attr("class", "legendCells")
+        .attr("transform", "translate(0, 24)");
+
+      // creates the cells for the legend for the map chart
+      const cellEnter = cellsLayer.selectAll("g.cell")
+        .data(legendCells)
+        .join("g")
+        .attr("class", "cell")
+        .attr("transform", (d, i) => `translate(${i * (legendShapeWidth + shapePadding)}, 0)`);
+
+      // creates the swatch for the legend for the map chart
+      cellEnter.append("rect")
+        .attr("class", "swatch")
+        .attr("width", legendShapeWidth)
+        .attr("height", legendShapeHeight)
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .attr("fill", (d) => d.fill);
+
+      // creates the label for the legend for the map chart
+      cellEnter.append("text")
+        .attr("class", "label")
+        .attr("x", legendShapeWidth / 2)
+        .attr("y", legendShapeHeight + legendLabelGap)
+        .attr("text-anchor", "middle")
+        .text((d) => d.label);
+
+      // gets the dimensions for the legend for the map chart
+      const bbox = mapLegendGroup.node().getBBox();
+      const legendPadX = 12;
+      const legendPadY = 10;
+
+      // creates the background for the legend for the map chart
+      mapLegendGroup.insert("rect", ":first-child")
+        .attr("class", "map-legend-bg")
+        .attr("x", bbox.x - legendPadX)
+        .attr("y", bbox.y - legendPadY)
+        .attr("width", bbox.width + legendPadX * 2)
+        .attr("height", bbox.height + legendPadY * 2)
+        .attr("rx", 10)
+        .attr("ry", 10);
+
+      // gets the dimensions for the legend for the map chart
+      const bboxPlaced = mapLegendGroup.node().getBBox();
+      const legendX = legendMarginX;
+      const legendY = svgHeight - legendBottomPad - bboxPlaced.height - bboxPlaced.y;
+      mapLegendGroup.attr("transform", `translate(${legendX},${legendY})`);
+
+      if (mapSelectedCountryKey) {
+        renderMapCountryDetailContent(
+          mapSelectedDisplayName || mapSelectedCountryKey,
+          mapSelectedCountryKey
+        );
+      }
+    }
+
+    // ----- Cross-chart (detail panel wiring) -----
+
+    // sets up the detail panels for the charts
+    function setupChartDetailPanels() {
+      if (mapDetailPanelInitialized) {
+        return;
+      }
+      mapDetailPanelInitialized = true;
+      const mapClose = document.getElementById("map-detail-close");
+      const mapPanel = document.getElementById("map-country-detail");
+      const barClose = document.getElementById("bar-detail-close");
+      const lineClose = document.getElementById("line-detail-close");
+      if (mapClose && mapPanel) {
+        mapClose.addEventListener("click", () => {
+          closeMapCountryDetailPanel();
+        });
+      }
+      if (barClose) {
+        barClose.addEventListener("click", () => {
+          closeBarCategoryDetailPanel();
+        });
+      }
+      if (lineClose) {
+        lineClose.addEventListener("click", () => {
+          closeLineYearDetailPanel();
+        });
+      }
+      document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") {
+          return;
+        }
+        const mapP = document.getElementById("map-country-detail");
+        const barP = document.getElementById("bar-category-detail");
+        const lineP = document.getElementById("line-year-detail");
+        const anyOpen = [mapP, barP, lineP].some((p) => p && !p.hidden);
+        if (!anyOpen) {
+          return;
+        }
+        closeMapCountryDetailPanel();
+        closeBarCategoryDetailPanel();
+        closeLineYearDetailPanel();
+      });
     }
 
     // refreshes the dashboard with the updated rows
     function refresh() {
+      updateChartSectionHeadings();
       const updatedRows = applyFilters(winnersData, filters);
-      updateTimeline(updatedRows);
+      const timelineContextRows = applyFiltersWithoutYear(winnersData, filters);
+      updateTimeline(updatedRows, timelineContextRows);
+      updateMap(updatedRows);
       updateBar(updatedRows);
       updateLine(updatedRows);
-      updateMap(updatedRows);
     }
+
+    // ----- Filters UI -----
 
     // gets the unique sorted values for the filters (gender and country)
     function getUniqueSortedValues(rows, key) {
@@ -745,34 +2392,149 @@
       });
     }
 
-    // binds the filter controls to the filters
+    // makes the bubble button for the filters
+    function makeBubbleButton(label, { kind, value } = {}) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "filter-bubble";
+      btn.textContent = label;
+      btn.dataset.bubbleKind = kind;
+      if (value != null) {
+        btn.dataset.bubbleValue = value;
+      }
+      return btn;
+    }
+
+    // syncs the category bubble buttons for the filters
+    function syncCategoryBubbleButtons() {
+      const container = document.getElementById("category-bubbles");
+      if (!container) {
+        return;
+      }
+      container.querySelectorAll("button.filter-bubble").forEach((btn) => {
+        if (btn.dataset.bubbleKind === "all") {
+          const on = filters.categoryAll;
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+          btn.classList.toggle("filter-bubble--active", on);
+        } else if (btn.dataset.bubbleValue != null) {
+          const on = !filters.categoryAll && filters.categorySelected.has(btn.dataset.bubbleValue);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+          btn.classList.toggle("filter-bubble--active", on);
+        }
+      });
+    }
+
+    // syncs the sex bubble buttons for the filters
+    function syncSexBubbleButtons() {
+      const container = document.getElementById("sex-bubbles");
+      if (!container) {
+        return;
+      }
+      container.querySelectorAll("button.filter-bubble").forEach((btn) => {
+        if (btn.dataset.bubbleKind === "all") {
+          const on = filters.sexAll;
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+          btn.classList.toggle("filter-bubble--active", on);
+        } else if (btn.dataset.bubbleValue != null) {
+          const on = !filters.sexAll && filters.sexSelected.has(btn.dataset.bubbleValue);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+          btn.classList.toggle("filter-bubble--active", on);
+        }
+      });
+    }
+
+    // handles the click event for the category bubble buttons for the filters
+    function onCategoryBubbleClick(event) {
+      const btn = event.target.closest("button.filter-bubble");
+      const container = event.currentTarget;
+      if (!btn || !container.contains(btn)) {
+        return;
+      }
+      if (btn.dataset.bubbleKind === "all") {
+        filters.categoryAll = true;
+        filters.categorySelected.clear();
+      } else {
+        const val = btn.dataset.bubbleValue;
+        if (filters.categoryAll) {
+          filters.categoryAll = false;
+          filters.categorySelected.clear();
+          filters.categorySelected.add(val);
+        } else if (filters.categorySelected.has(val)) {
+          filters.categorySelected.delete(val);
+          if (filters.categorySelected.size === 0) {
+            filters.categoryAll = true;
+          }
+        } else {
+          filters.categorySelected.add(val);
+        }
+      }
+      syncCategoryBubbleButtons();
+      refresh();
+    }
+
+    // handles the click event for the sex bubble buttons for the filters
+    function onSexBubbleClick(event) {
+      const btn = event.target.closest("button.filter-bubble");
+      const container = event.currentTarget;
+      if (!btn || !container.contains(btn)) {
+        return;
+      }
+      if (btn.dataset.bubbleKind === "all") {
+        filters.sexAll = true;
+        filters.sexSelected.clear();
+      } else {
+        const val = btn.dataset.bubbleValue;
+        if (filters.sexAll) {
+          filters.sexAll = false;
+          filters.sexSelected.clear();
+          filters.sexSelected.add(val);
+        } else if (filters.sexSelected.has(val)) {
+          filters.sexSelected.delete(val);
+          if (filters.sexSelected.size === 0) {
+            filters.sexAll = true;
+          }
+        } else {
+          filters.sexSelected.add(val);
+        }
+      }
+      syncSexBubbleButtons();
+      refresh();
+    }
+
+    // creates the category and sex bubble controls for the filters
+    function buildCategorySexBubbleControls(categories, sexValues) {
+      const categoryContainer = document.getElementById("category-bubbles");
+      const sexContainer = document.getElementById("sex-bubbles");
+      categoryContainer.replaceChildren();
+      sexContainer.replaceChildren();
+
+      const allCat = makeBubbleButton("All", { kind: "all" });
+      allCat.setAttribute("aria-pressed", "true");
+      allCat.classList.add("filter-bubble--active");
+      categoryContainer.appendChild(allCat);
+      categories.forEach((value) => {
+        const b = makeBubbleButton(value, { kind: "item", value });
+        b.setAttribute("aria-pressed", "false");
+        categoryContainer.appendChild(b);
+      });
+      categoryContainer.addEventListener("click", onCategoryBubbleClick);
+
+      const allSex = makeBubbleButton("All", { kind: "all" });
+      allSex.setAttribute("aria-pressed", "true");
+      allSex.classList.add("filter-bubble--active");
+      sexContainer.appendChild(allSex);
+      sexValues.forEach((value) => {
+        const b = makeBubbleButton(value, { kind: "item", value });
+        b.setAttribute("aria-pressed", "false");
+        sexContainer.appendChild(b);
+      });
+      sexContainer.addEventListener("click", onSexBubbleClick);
+    }
+
+    // binds the filter controls to the country select and reset button for the filters
     function bindFilterControls() {
-      const yearMinInput = document.getElementById("year-min");
-      const yearMaxInput = document.getElementById("year-max");
-      const categorySelect = document.getElementById("category-filter");
-      const genderSelect = document.getElementById("gender-filter");
       const countrySelect = document.getElementById("country-filter");
       const resetButton = document.getElementById("reset-filters");
-
-      yearMinInput.addEventListener("input", function () {
-        filters.yearMin = this.value === "" ? null : Number(this.value);
-        refresh();
-      });
-
-      yearMaxInput.addEventListener("input", function () {
-        filters.yearMax = this.value === "" ? null : Number(this.value);
-        refresh();
-      });
-
-      categorySelect.addEventListener("change", function () {
-        filters.category = this.value;
-        refresh();
-      });
-
-      genderSelect.addEventListener("change", function () {
-        filters.gender = this.value;
-        refresh();
-      });
 
       countrySelect.addEventListener("change", function () {
         filters.country = this.value;
@@ -780,24 +2542,28 @@
       });
 
       resetButton.addEventListener("click", function () {
-        filters.yearMin = null;
-        filters.yearMax = null;
-        filters.category = "All";
-        filters.gender = "All";
+        filters.yearMin = DEFAULT_YEAR_MIN;
+        filters.yearMax = DEFAULT_YEAR_MAX;
+        filters.categoryAll = true;
+        filters.categorySelected.clear();
+        filters.sexAll = true;
+        filters.sexSelected.clear();
         filters.country = "All";
 
-        yearMinInput.value = "";
-        yearMaxInput.value = "";
-        categorySelect.value = "All";
-        genderSelect.value = "All";
+        syncYearRangeSliderFromFilters();
         countrySelect.value = "All";
+        syncCategoryBubbleButtons();
+        syncSexBubbleButtons();
 
+        closeMapCountryDetailPanel();
+        closeBarCategoryDetailPanel();
+        closeLineYearDetailPanel();
         refresh();
       });
     }
 
-    // loads the winners data
-    d3.csv("NobelData/processed/Winners.csv").then(function (data) {
+    // loads the winners data and processes the data
+    d3.csv("NobelData/processed/PrizeWinners.csv").then(function (data) {
       winnersData = data.map((row) => {
         const representedCountry = row["Country represented for Nobel Prize"] || "";
         const firstCountry = representedCountry.split(",")[0] || "";
@@ -815,28 +2581,33 @@
           year: years[0] || null, years,
           category: categories[0] || "", categories,
           gender: (row.Gender || "").trim(),
-          country: firstCountry.trim()
+          country: firstCountry.trim(),
+          representedCountries: splitRepresentedCountries(representedCountry)
         };
       });
 
-      // gets the unique sorted categories, genders, and countries
+      // gets the unique sorted categories, genders, and countries 
       const categories = getUniqueSortedCategories(winnersData, "categories");
-      const genders = getUniqueSortedValues(winnersData, "gender");
+      const sexValues = getUniqueSortedValues(winnersData, "gender");
       const countries = getUniqueSortedValues(winnersData, "country");
 
-      // makes the select options for the filters
-      makeSelectOptions("category-filter", categories);
-      makeSelectOptions("gender-filter", genders);
+      // builds the filter bubble controls 
+      buildCategorySexBubbleControls(categories, sexValues);
+
       makeSelectOptions("country-filter", countries);
+
+      // sets up the chart detail panels
+      setupChartDetailPanels();
 
       // binds the filter controls to the filters
       bindFilterControls();
+      initializeYearRangeSlider();
 
       // initializes the charts
-      initializeBarChart();
-      initializeLineChart();
       initializeTimelineChart();
       initializeMapChart();
+      initializeBarChart();
+      initializeLineChart();
 
       // sets the global variables
       window.nobelWinnersData = winnersData;
