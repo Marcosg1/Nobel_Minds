@@ -17,20 +17,14 @@
   <main>
     <section class="intro-welcome" aria-label="About this project">
       <p class="intro-lead">
-        Nobel laureates are presented here across the years covered by
-        <a href="https://github.com/ali-ce/datasets/tree/master/Nobel-Database">this dataset</a>,
-        from the earliest prizes through the 2014 award year. The compilation is a
-        historical snapshot and does not include later prizes or revisions published
-        by the Nobel Prize organization. The material is organized so that award
-        history may be examined by discipline, geography, and period, and so that
-        individual recipients can be understood in relation to broader patterns in
-        the prize record.
+        Explore more than a century of Nobel laureates (1901–2014) through linked views of the prize timeline, world
+        map, categories, and gender over time. Use the filters on the left to narrow by award years, discipline, sex,
+        and country; every chart updates together. Click countries, bars, or points on the line chart to see laureate
+        details and links to the official Nobel site.
       </p>
       <p class="intro-resource">
-        For authoritative information on how the prizes are awarded, eligibility, and
-        related policies, refer to the
-        <a href="https://www.nobelprize.org/frequently-asked-questions/">frequently asked questions published by the
-          Nobel Prize</a>.
+        For how prizes are awarded today, see the
+        <a href="https://www.nobelprize.org/frequently-asked-questions/">Nobel Prize FAQ</a>.
       </p>
     </section>
     <div class="dashboard-layout">
@@ -68,8 +62,10 @@
         <section aria-labelledby="timeline-chart-heading">
           <header class="chart-section-header">
             <h2 id="timeline-chart-heading" aria-live="polite"></h2>
-            <p class="chart-helper">Drag the brush on the lower strip to focus a period, or use the Award years control
-              in Filters; both stay in sync.</p>
+            <p class="chart-helper">Hover dots for laureate details. Click a dot to open the official Nobel page. Drag
+              the
+              brush on the lower strip to focus a period, or use the Award years control in Filters; both stay in sync.
+            </p>
           </header>
           <div id="timeline-chart" class="chart-wrap" role="img" aria-label="Timeline"></div>
           <div id="timeline-tooltip" class="tooltip chart-tooltip"></div>
@@ -79,8 +75,8 @@
         <section aria-labelledby="map-chart-heading">
           <header class="chart-section-header">
             <h2 id="map-chart-heading">Where Nobel laureates come from</h2>
-            <p class="chart-helper">Hover for prize totals (current filters). Click a country for laureates and prize
-              counts.</p>
+            <p class="chart-helper">Hover shaded countries for prize totals (current filters). Click a country for
+              laureates and prize counts.</p>
           </header>
           <div id="map-chart" class="chart-wrap" role="img" aria-label="Map"></div>
           <div id="map-tooltip" class="tooltip chart-tooltip"></div>
@@ -134,6 +130,47 @@
       </div>
     </div>
   </main>
+
+  <footer class="site-footer">
+    <div class="site-meta-bar">
+      <p class="site-meta-line">
+        <span class="site-meta-label">Data source:</span>
+        <a href="https://github.com/ali-ce/datasets/tree/master/Nobel-Database">Nobel Database (GitHub)</a>
+        <span class="site-meta-sep" aria-hidden="true">·</span>
+        <a href="https://github.com/johan/world.geo.json/blob/master/countries.geo.json">World country boundaries</a>
+        <span class="site-meta-sep" aria-hidden="true">·</span>
+        <a href="https://www.nobelprize.org/frequently-asked-questions/">Nobel Prize FAQ</a>
+      </p>
+      <p class="site-meta-line">
+        <span class="site-meta-label">Links:</span>
+        <a href="https://github.com/Marcosg1/Nobel_Minds">GitHub repository</a>
+      </p>
+      <p class="site-meta-credit">Marcos Gallegos · CS 360 Data Visualization · University of San Francisco · 2026</p>
+    </div>
+    <section class="methodology" aria-labelledby="methodology-heading">
+      <h2 id="methodology-heading">Methodology</h2>
+      <p>
+        The primary data is the
+        <a href="https://github.com/ali-ce/datasets/tree/master/Nobel-Database">Nobel Database</a>,
+        a compilation of laureate records published on GitHub by Alice Corona. The raw bundle includes five CSV tables
+        covering winners, prizes, countries, years, and award categories from 1901 through 2014. The dataset is a
+        historical snapshot and does not include prizes after 2014. For this project,
+        Winners and Prizes were restructured and joined in Python into a single PrizeWinners file with one row per
+        laureate, including corrections such as <em>Chemestry</em> to <em>Chemistry</em> and separate year and category
+        fields for repeat winners. Python cleaning scripts were written with assistance from an AI coding assistant.
+      </p>
+      <p>
+        The dashboard loads only the processed PrizeWinners table with D3.js v7. Four charts—a timeline, choropleth
+        map, bar chart, and line chart—share one filter state (year range, category, sex, and country) from a sticky
+        left sidebar; the timeline brush and year slider stay in sync. The map is drawn from
+        <a href="https://github.com/johan/world.geo.json/blob/master/countries.geo.json">countries.geo.json</a>
+        with a small set of country name aliases and point markers where territories are missing from the basemap. An
+        AI coding assistant helped with dashboard layout, code organization, and linked filtering. Clicking map regions,
+        bars, or line points opens panels with laureate names and official prize links when available.
+      </p>
+    </section>
+  </footer>
+
   <script>
     // ---------------- Shared data and filters ----------------
     let winnersData = [];
@@ -1315,6 +1352,13 @@
       // makes the x and y axes
       barAxisX = barChart.append("g").attr("transform", `translate(0,${barHeight})`);
       barAxisY = barChart.append("g");
+
+      barChart.append("text")
+        .attr("class", "axis-title")
+        .attr("x", barWidth / 2)
+        .attr("y", barHeight + 40)
+        .attr("text-anchor", "middle")
+        .text("Prizes");
     }
 
     // updates the bar chart with the updated rows
@@ -2101,8 +2145,8 @@
       const prizeQuantize =
         kDistinct > MAP_COLORS.length
           ? d3.scaleQuantize()
-              .domain([mapLogScale(positiveSorted[0]), mapLogScale(positiveSorted[kDistinct - 1])])
-              .range(MAP_COLORS)
+            .domain([mapLogScale(positiveSorted[0]), mapLogScale(positiveSorted[kDistinct - 1])])
+            .range(MAP_COLORS)
           : null;
 
       // gets the color for a prize value for the map chart
@@ -2141,11 +2185,17 @@
           "country-selected",
           (d) => (mapNameAliases[d.properties.name] || d.properties.name) === mapSelectedCountryKey
         )
+        .attr("pointer-events", (d) => (getPrizeValue(d.properties.name) > 0 ? "all" : "none"))
         .on("mouseover", function (event, d) {
+          const prizes = getPrizeValue(d.properties.name);
+          if (!prizes) {
+            mapTooltip.style("opacity", 0);
+            return;
+          }
           mapTooltip
             .style("opacity", 1)
             .html(
-              `<strong>${d.properties.name}</strong><br>Prizes: ${getPrizeValue(d.properties.name)}<br><span style="opacity:0.85;font-size:12px">Click for laureates</span>`
+              `<strong>${d.properties.name}</strong><br>Prizes: ${d3.format("d")(prizes)}<br><span style="opacity:0.85;font-size:12px">Click for laureates</span>`
             );
         })
         .on("mousemove", function (event) {
